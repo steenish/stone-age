@@ -153,6 +153,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   agingObject: {fileID: 5552343722300449814}
+  agingMaterial: {fileID: 2100000, guid: 59451d0c01ff9804295d2423b0a14be1, type: 2}
+  woodMap: {fileID: 2800000, guid: 491938ac4443ea84dbc349770e77307b, type: 3}
+  agingDays: 100
+  applyToMaterialAfter: 0
+  applyMaterialInSlotIndex: 0
+  latitude: 0
+  yearStartDay: 0
 --- !u!4 &505168065
 Transform:
   m_ObjectHideFlags: 0
