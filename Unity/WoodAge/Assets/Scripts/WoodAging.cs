@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Globalization;
 using UnityEngine;
 
 public class WoodAging : MonoBehaviour {
@@ -26,7 +27,8 @@ public class WoodAging : MonoBehaviour {
             return;
 		}
 
-        Debug.Log("Aging " + agingObject.name + ".");
+        Debug.Log("Initializing.");
+        System.DateTime initializationStart = System.DateTime.Now;
 
         // Extract textures from material.
         Texture2D albedoMap = null;
@@ -57,9 +59,35 @@ public class WoodAging : MonoBehaviour {
         DoubleColor[,] albedoBuffer = null;
         double[,] roughnessBuffer = null;
         double[,] heightBuffer = null;
-        // TODO
+        float[,] occlusionBuffer = null;
+        
+
+        if (albedoMap != null) {
+            albedoBuffer = Utility.CreateColorBuffer(albedoMap);
+            //TextureDebug.DrawTexture(albedoMap.width, albedoMap.height, albedoBuffer);
+        }
+
+        if (roughnessMap != null) {
+            roughnessBuffer = Utility.CreateDoubleBuffer(roughnessMap);
+            //TextureDebug.DrawTexture(roughnessMap.width, roughnessMap.height, roughnessBuffer);
+        }
+
+        if (normalMap != null) {
+            heightBuffer = Utility.HeightFromNormals(normalMap);
+            TextureDebug.DrawTexture(normalMap.width, normalMap.height, heightBuffer);
+		}
+
+        if (occlusionMap != null) {
+            occlusionBuffer = Utility.CreateFloatBuffer(occlusionMap);
+            //TextureDebug.DrawTexture(occlusionMap.width, occlusionMap.height, occlusionBuffer);
+        }
+
+        System.TimeSpan timeDifference = System.DateTime.Now - initializationStart;
+        Debug.Log("Initialization done (" + (timeDifference.Seconds + timeDifference.Milliseconds * 0.001) + " s)"); // TODO
 
         // Perform the aging.
+        Debug.Log("Aging " + agingObject.name + ".");
+
         for (int day = 0; day < agingDays; ++day) {
             int yearDay = (yearStartDay + day) % 365;
 
@@ -69,38 +97,20 @@ public class WoodAging : MonoBehaviour {
         if (applyToMaterialAfter) {
             MaterialPropertyBlock mpb = new MaterialPropertyBlock();
             if (albedoMap != null) {
-                mpb.SetTexture("_MainTex", CreateTexture(albedoBuffer));
+                mpb.SetTexture("_MainTex", Utility.CreateTexture(albedoMap.width, albedoMap.height, albedoBuffer));
 			}
 
             if (roughnessMap != null) {
-                mpb.SetTexture("_SpecGlossMap", CreateTexture(roughnessBuffer));
+                mpb.SetTexture("_SpecGlossMap", Utility.CreateTexture(roughnessMap.width, roughnessMap.height, roughnessBuffer));
             }
 
             if (normalMap != null) {
-                mpb.SetTexture("_BumpMap", NormalsFromHeight(heightBuffer));
+                mpb.SetTexture("_BumpMap", Utility.NormalsFromHeight(heightBuffer));
 			}
 
             agingObject.GetComponent<Renderer>().SetPropertyBlock(mpb, applyMaterialInSlotIndex);
         }
 	}
 
-    private Texture2D CreateTexture(DoubleColor[,] colorBuffer) {
-        // TODO
-        throw new System.NotImplementedException();
-	}
-
-    private Texture2D CreateTexture(double[,] doubleBuffer) {
-        // TODO
-        throw new System.NotImplementedException();
-    }
-
-    private float[,] HeightFromNormals(Texture2D normalMap) {
-        // TODO
-        throw new System.NotImplementedException();
-    }
-
-    private Texture2D NormalsFromHeight(double[,] height) {
-        // TODO
-        throw new System.NotImplementedException();
-	}
+    
 }
