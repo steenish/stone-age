@@ -73,11 +73,11 @@ public class WoodAging : MonoBehaviour {
         }
 
         if (normalMap != null) {
-            heightBuffer = Utility.HeightFromNormals(normalMap);
-            TextureDebug.DrawTexture(normalMap.width, normalMap.height, heightBuffer);
+			heightBuffer = Utility.HeightFromNormals(normalMap);
+			TextureDebug.DrawTexture(normalMap.width, normalMap.height, heightBuffer);
 		}
 
-        if (occlusionMap != null) {
+		if (occlusionMap != null) {
             occlusionBuffer = Utility.CreateFloatBuffer(occlusionMap);
             //TextureDebug.DrawTexture(occlusionMap.width, occlusionMap.height, occlusionBuffer);
         }

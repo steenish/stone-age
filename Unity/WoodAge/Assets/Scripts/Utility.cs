@@ -61,14 +61,16 @@ public class Utility : MonoBehaviour {
         int width = normalMap.width;
         int height = normalMap.height;
 
-        Vector3[,] normals = new Vector3[width, height];
+        Vector2[,] normals = new Vector2[width, height];
         double[,,] heights = new double[width, height, 4];
+        double[,] resultHeights = new double[width, height];
 
         // Extract normal vectors from the normal map.
         for (int x = 0; x < width; ++x) {
             for (int y = 0; y < height; ++y) {
                 Color normalColor = normalMap.GetPixel(x, y);
-                normals[x, y] = new Vector3(normalColor.r, normalColor.g, normalColor.b);
+                // Uncompress DXT5nm-compressed normals. Map values into -1 to 1 range.
+                normals[x, y] = (new Vector2(normalColor.a, normalColor.g) * 2.0f) - Vector2.one;
             }
         }
 
@@ -129,8 +131,7 @@ public class Utility : MonoBehaviour {
 
         // Accumulate the separate results, find min and max height.
         double minHeight = double.MaxValue;
-        double maxHeight = -double.MinValue;
-        double[,] resultHeights = new double[width, height];
+        double maxHeight = double.MinValue;
         for (int x = 0; x < width; ++x) {
             for (int y = 0; y < height; ++y) {
                 resultHeights[x, y] = heights[x, y, 0] + heights[x, y, 1] + heights[x, y, 2] + heights[x, y, 3];
@@ -147,8 +148,8 @@ public class Utility : MonoBehaviour {
             }
         }
 
-        return resultHeights;
-    }
+		return resultHeights;
+	}
 
     public static Texture2D NormalsFromHeight(double[,] height) {
         // TODO

@@ -15,7 +15,7 @@ public class TextureDebug {
 		DrawTexture(Utility.CreateTexture(width, height, data, textureName));
 	}
 
-	private static void DrawTexture(Texture2D texture) {
+	public static void DrawTexture(Texture2D texture) {
 		RawImage outputImage = GameObject.Find("DebugTextureImage").GetComponent<RawImage>();
 		outputImage.texture = texture;
 	}
