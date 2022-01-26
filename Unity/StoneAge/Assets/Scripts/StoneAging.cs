@@ -16,6 +16,8 @@ namespace StoneAge {
         private bool saveToDisk = false;
         [SerializeField]
         private System.Environment.SpecialFolder saveLocation;
+        [SerializeField]
+        private string folderName = "StoneAge";
 
         public void PerformAging() {
             Debug.Log("Initializing...");
@@ -63,7 +65,7 @@ namespace StoneAge {
             LogTime("Aging done", simulationStart);
 
             if (saveToDisk) {
-                string savePath = System.Environment.GetFolderPath(saveLocation) + "/StoneAge/";
+                string savePath = System.Environment.GetFolderPath(saveLocation) + "/" + folderName + "/";
                 System.IO.Directory.CreateDirectory(savePath);
 				Textures.SaveTextureAsPNG(Conversion.CreateTexture(albedoMap.width, albedoMap.height, albedoBuffer), savePath + "Albedo_Aged_" + agingYears + ".png");
 				Textures.SaveTextureAsPNG(Conversion.CreateTexture(albedoMap.width, albedoMap.height, heightBuffer), savePath + "Height_Aged_" + agingYears + ".png");

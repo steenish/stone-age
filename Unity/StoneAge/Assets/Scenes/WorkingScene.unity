@@ -154,10 +154,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   albedoMap: {fileID: 2800000, guid: 88886e405d738f84fa1ccb60b8ed1109, type: 3}
   heightMap: {fileID: 2800000, guid: 781b1fb379dd80241be26a3e2dceb5b0, type: 3}
-  agingYears: 10
+  agingYears: 1
   rainRate: 1
   saveToDisk: 1
   saveLocation: 39
+  folderName: StoneAge
 --- !u!4 &505168065
 Transform:
   m_ObjectHideFlags: 0
