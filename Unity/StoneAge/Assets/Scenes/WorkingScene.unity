@@ -152,11 +152,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 232d6f62536adb549882044d4f127850, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  agingObject: {fileID: 0}
-  albedoMap: {fileID: 2800000, guid: 1e1738fb4f6601f4e966d51e5301847a, type: 3}
-  heightMap: {fileID: 2800000, guid: d242fd1d334b8994aaa81f34371cc605, type: 3}
-  occlusionMap: {fileID: 2800000, guid: a46c8d6d5886db74ab47ad75acee1398, type: 3}
-  agingYears: 0
+  albedoMap: {fileID: 2800000, guid: 88886e405d738f84fa1ccb60b8ed1109, type: 3}
+  heightMap: {fileID: 2800000, guid: 781b1fb379dd80241be26a3e2dceb5b0, type: 3}
+  agingYears: 10
+  rainRate: 1
   saveToDisk: 1
 --- !u!4 &505168065
 Transform:
@@ -375,7 +374,7 @@ PrefabInstance:
     - target: {fileID: 4647249727994169328, guid: f85279b33689db44bb9153a16153aa35, type: 3}
       propertyPath: m_Materials.Array.data[0]
       value: 
-      objectReference: {fileID: 2100000, guid: ae9aa4a780e90704dab3d370c237193e, type: 2}
+      objectReference: {fileID: 2100000, guid: 7b8e9918233a2a8428e5b2a3fe99a835, type: 2}
     - target: {fileID: 4647249727994169330, guid: f85279b33689db44bb9153a16153aa35, type: 3}
       propertyPath: m_Name
       value: Tiles1
