@@ -76,7 +76,7 @@ namespace StoneAge {
 
         private static void LogTime(string text, System.DateTime startTime) {
             System.TimeSpan timeDifference = System.DateTime.Now - startTime;
-            Debug.Log(text + " (" + (timeDifference.Seconds + timeDifference.Milliseconds * 0.001) + " s).");
+            Debug.Log(text + " (" + (timeDifference.Minutes * 60 + timeDifference.Seconds + timeDifference.Milliseconds * 0.001) + " s).");
         }
     }
 }
