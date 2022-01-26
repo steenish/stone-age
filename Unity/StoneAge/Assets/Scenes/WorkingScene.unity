@@ -157,6 +157,7 @@ MonoBehaviour:
   agingYears: 10
   rainRate: 1
   saveToDisk: 1
+  saveLocation: 39
 --- !u!4 &505168065
 Transform:
   m_ObjectHideFlags: 0
