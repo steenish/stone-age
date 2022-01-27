@@ -20,7 +20,11 @@ namespace StoneAge {
         [SerializeField]
         private int agingYears;
         [SerializeField]
+        [Range(0.0f, 1.0f)]
         private float rainRate = 1.0f;
+        [SerializeField]
+        private Gradient sedimentColor;
+        // TODO add erosion parameters
         [SerializeField]
         private bool saveToDisk = false;
         [SerializeField]
@@ -45,7 +49,7 @@ namespace StoneAge {
             System.DateTime initializationStart = System.DateTime.Now;
 
             // Create buffers from the input textures.
-            DoubleColor[,] albedoBuffer = null;
+            Color[,] albedoBuffer = null;
             albedoBuffer = Conversion.CreateColorBuffer(albedoMap);
 
             double[,,] layers = new double[heightMap.width, heightMap.height, 2];
@@ -87,8 +91,10 @@ namespace StoneAge {
             System.DateTime finalizationStart = System.DateTime.Now;
 
             double[,] heightBuffer = Height.FinalizeHeight(ref layers);
-            
-            // TODO make color map.
+
+            double[,] sedimentBuffer = Conversion.ExtractBufferLayer(layers, (int) Erosion.LayerName.Sediment);
+            Height.NormalizeHeight(ref sedimentBuffer);
+            albedoBuffer = Textures.OverlaySediment(albedoBuffer, sedimentBuffer, sedimentColor);
 
             LogTime("Finalization done", finalizationStart);
 
@@ -102,8 +108,6 @@ namespace StoneAge {
 				Textures.SaveTextureAsPNG(Conversion.CreateTexture(heightMap.width, heightMap.height, heightBuffer), savePath + "Height_Aged_" + agingYears + ".png");
 
                 if (saveDebugTextures) {
-                    double[,] sedimentBuffer = Conversion.ExtractBufferLayer(layers, (int) Erosion.LayerName.Sediment);
-                    Height.NormalizeHeight(ref sedimentBuffer);
                     Textures.SaveTextureAsPNG(Conversion.CreateTexture(heightMap.width, heightMap.height, sedimentBuffer), savePath + "Sediment_Buffer_" + agingYears + ".png");
                 }
 

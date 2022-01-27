@@ -10,6 +10,7 @@ namespace StoneAge {
 		SerializedProperty heightMap;
 		SerializedProperty agingYears;
 		SerializedProperty rainRate;
+		SerializedProperty sedimentColor;
 		SerializedProperty saveToDisk;
 		SerializedProperty saveLocation;
 		SerializedProperty folderName;
@@ -21,6 +22,7 @@ namespace StoneAge {
 			heightMap = serializedObject.FindProperty("heightMap");
 			agingYears = serializedObject.FindProperty("agingYears");
 			rainRate = serializedObject.FindProperty("rainRate");
+			sedimentColor = serializedObject.FindProperty("sedimentColor");
 			saveToDisk = serializedObject.FindProperty("saveToDisk");
 			saveLocation = serializedObject.FindProperty("saveLocation");
 			folderName = serializedObject.FindProperty("folderName");
@@ -43,6 +45,7 @@ namespace StoneAge {
 			EditorGUILayout.Space();
 			EditorGUILayout.LabelField("Erosion parameters:");
 			EditorGUILayout.PropertyField(rainRate);
+			EditorGUILayout.PropertyField(sedimentColor);
 
 			EditorGUILayout.Space();
 			EditorGUILayout.LabelField("Export settings:");

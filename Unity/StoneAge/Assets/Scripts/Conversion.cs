@@ -8,7 +8,11 @@ namespace Utility {
             return CreateBuffer(map, (Color pixelColor) => (double) pixelColor.r);
         }
 
-        public static DoubleColor[,] CreateColorBuffer(Texture2D map) {
+        public static Color[,] CreateColorBuffer(Texture2D map) {
+            return CreateBuffer(map, (Color pixelColor) => pixelColor);
+        }
+
+        public static DoubleColor[,] CreateDoubleColorBuffer(Texture2D map) {
             return CreateBuffer(map, (Color pixelColor) => new DoubleColor(pixelColor.r, pixelColor.g, pixelColor.b));
         }
 
