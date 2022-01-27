@@ -35,6 +35,8 @@ namespace StoneAge {
         private bool saveDebugTextures = false;
 
         public void PerformAging() {
+            Random.InitState(0);
+
             if (albedoMap == null) {
                 Debug.LogError("No albedo map supplied.");
                 return;
