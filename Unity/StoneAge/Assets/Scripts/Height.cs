@@ -3,7 +3,27 @@ using UnityEngine;
 namespace Utility {
     public class Height {
 
-        public static Vector2 GetInterpolatedGradient(Vector2 position, double[,] values) {
+        public static double[,] FinalizeHeight(ref double[,,] layers) {
+            int width = layers.GetLength(1);
+            int height = layers.GetLength(0);
+            int numLayers = layers.GetLength(2);
+
+            double[,] aggregateHeight = new double[width, height];
+
+            for (int y = 0; y < height; ++y) {
+                for (int x = 0; x < width; ++x) {
+                    for (int i = 0; i < numLayers; ++i) {
+                        aggregateHeight[x, y] += layers[x, y, i];
+					}
+				}
+            }
+
+            NormalizeHeight(ref aggregateHeight);
+
+            return aggregateHeight;
+        }
+
+        public static Vector2 GetInterpolatedGradient(Vector2 position, double[,,] values) {
             System.Func<double, double, double, double, float, float, Vector2> interpolationFunction =
                 (double Pxy, double Px1y, double Pxy1, double Px1y1, float u, float v) => new Vector2((float) ((Px1y - Pxy) * (1 - v) + (Px1y1 - Pxy1) * v), (float) ((Pxy1 - Pxy) * (1 - u) + (Px1y1 - Px1y) * u));
 
@@ -11,7 +31,7 @@ namespace Utility {
             return GetInterpolatedValue(position, values, interpolationFunction);
         }
 
-        public static double GetInterpolatedHeight(Vector2 position, double[,] values) {
+        public static double GetInterpolatedHeight(Vector2 position, double[,,] values) {
             System.Func<double, double, double, double, float, float, double> interpolationFunction =
                 (double Pxy, double Px1y, double Pxy1, double Px1y1, float u, float v) => (Pxy * (1 - u) + Px1y * u) * (1 - v) + (Pxy1 * (1 - u) + Px1y1 * u) * v;
 
@@ -19,7 +39,7 @@ namespace Utility {
             return GetInterpolatedValue(position, values, interpolationFunction);
         }
 
-        private static T GetInterpolatedValue<T>(Vector2 position, double[,] values, System.Func<double, double, double, double, float, float, T> interpolationFunction) {
+        private static T GetInterpolatedValue<T>(Vector2 position, double[,,] values, System.Func<double, double, double, double, float, float, T> interpolationFunction) {
             // Get whole and fractional parts of the coordinates.
             int x = Mathf.FloorToInt(position.x);
             int y = Mathf.FloorToInt(position.y);
@@ -44,22 +64,23 @@ namespace Utility {
 
             return values[x, y];
         }
+        
+        public static double GetValueOrBoundary(int x, int y, double[,,] values) {
+            int width = values.GetLength(1);
+            int height = values.GetLength(0);
+            int numLayers = values.GetLength(2);
 
-        public static double[,] HeightFromAlbedo(Texture2D albedoMap) {
-            int size = albedoMap.width;
-            double[,] resultHeights = new double[size, size];
+            // Convert coordinates to boundary if needed.
+            x = Mathf.Clamp(x, 0, width - 1);
+            y = Mathf.Clamp(y, 0, height - 1);
 
-            // Extract colors from the albedo map.
-            Color[] colors = albedoMap.GetPixels();
-            for (int y = 0; y < size; ++y) {
-                for (int x = 0; x < size; ++x) {
-                    resultHeights[x, y] = colors[y * size + x].grayscale;
-                }
-            }
+            double sum = 0.0;
 
-            NormalizeHeight(ref resultHeights);
+            for (int i = 0; i < numLayers; ++i) {
+                sum += values[x, y, i];
+			}
 
-			return resultHeights;
+            return sum;
         }
 
         public static void NormalizeHeight(ref double[,] heightBuffer) {
@@ -80,6 +101,28 @@ namespace Utility {
             for (int x = 0; x < size; ++x) {
                 for (int y = 0; y < size; ++y) {
                     heightBuffer[x, y] = (heightBuffer[x, y] - minHeight) * normalizingDenominator;
+                }
+            }
+        }
+
+        public static void NormalizeHeightLayer(ref double[,,] layers, int layerIndex) {
+            int size = layers.GetLength(0);
+
+            // Find min and max height.
+            double minHeight = double.MaxValue;
+            double maxHeight = -double.MaxValue;
+            for (int x = 0; x < size; ++x) {
+                for (int y = 0; y < size; ++y) {
+                    if (layers[x, y, layerIndex] < minHeight) minHeight = layers[x, y, layerIndex];
+                    if (layers[x, y, layerIndex] > maxHeight) maxHeight = layers[x, y, layerIndex];
+                }
+            }
+
+            // Normalize into 0 - 1 range.
+            double normalizingDenominator = 1 / (maxHeight - minHeight);
+            for (int x = 0; x < size; ++x) {
+                for (int y = 0; y < size; ++y) {
+                    layers[x, y, layerIndex] = (layers[x, y, layerIndex] - minHeight) * normalizingDenominator;
                 }
             }
         }

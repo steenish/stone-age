@@ -27,6 +27,30 @@ namespace Utility {
 
             return colors;
         }
+        
+        public static void FillDoubleBufferLayer(Texture2D map, ref double[,,] layers, int layerIndex) {
+            FillBufferLayer(map, ref layers, layerIndex, (Color pixelColor) => (double) pixelColor.r);
+        }
+
+        public static void FillColorBufferLayer(Texture2D map, ref DoubleColor[,,] layers, int layerIndex) {
+            FillBufferLayer(map, ref layers, layerIndex, (Color pixelColor) => new DoubleColor(pixelColor.r, pixelColor.g, pixelColor.b));
+        }
+
+        public static void FillFloatBufferLayer(Texture2D map, ref float[,,] layers, int layerIndex) {
+            FillBufferLayer(map, ref layers, layerIndex, (Color pixelColor) => pixelColor.r);
+        }
+
+        private static void FillBufferLayer<T>(Texture2D map, ref T[,,] layers, int layerIndex, Func<Color, T> valueExtractionFunction) {
+            int width = map.width;
+            int height = map.height;
+            Color[] colors = map.GetPixels();
+
+            for (int y = 0; y < width; ++y) {
+                for (int x = 0; x < height; ++x) {
+                    layers[x, y, layerIndex] = valueExtractionFunction(colors[x + y * width]);
+                }
+            }
+        }
 
         public static Texture2D CreateTexture(int width, int height, Color[,] data, string textureName = "Texture") {
             return CreateTexture(width, height, data, (Color color) => color, textureName);
