@@ -20,6 +20,8 @@ namespace StoneAge {
         [SerializeField]
         private int agingYears;
         [SerializeField]
+        private int seed;
+        [SerializeField]
         [Range(0.0f, 1.0f)]
         private float rainRate = 1.0f;
         [SerializeField]
@@ -35,7 +37,7 @@ namespace StoneAge {
         private bool saveDebugTextures = false;
 
         public void PerformAging() {
-            Random.InitState(0);
+            // TODO CHECK MAPS EQUAL SIZE, AND SQUARE
 
             if (albedoMap == null) {
                 Debug.LogError("No albedo map supplied.");
@@ -49,6 +51,8 @@ namespace StoneAge {
 
             Debug.Log("Initializing...");
             System.DateTime initializationStart = System.DateTime.Now;
+
+            Random.InitState(seed);
 
             // Create buffers from the input textures.
             Color[,] albedoBuffer = null;
