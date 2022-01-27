@@ -54,8 +54,8 @@ namespace StoneAge {
             Color[,] albedoBuffer = null;
             albedoBuffer = Conversion.CreateColorBuffer(albedoMap);
 
-            double[,,] layers = new double[heightMap.width, heightMap.height, 2];
-            Conversion.FillDoubleBufferLayer(heightMap, ref layers, (int) Erosion.LayerName.Rock);
+            float[,,] layers = new float[heightMap.width, heightMap.height, 2];
+            Conversion.FillFloatBufferLayer(heightMap, ref layers, (int) Erosion.LayerName.Rock);
 
             LogTime("Initialization done", initializationStart);
 
@@ -86,15 +86,15 @@ namespace StoneAge {
                 int numMaxSteps = numSteps.FindAll(e => e >= 999).Count;
                 int maxStep = numSteps.Max();
                 int minStep = numSteps.Min();
-                Debug.Log("min steps: " + minStep + ", max steps: " + maxStep + ", average steps: " + averageSteps + ", times maxStep parameter reached: " + numMaxSteps + " / " + numSteps.Count + " = " + ((float) numMaxSteps / numSteps.Count));
+                Debug.Log("min steps: " + minStep + ", max steps: " + maxStep + ", average steps: " + averageSteps + ", times maxStep parameter reached: " + numMaxSteps + " / " + numSteps.Count + " = " + ( numMaxSteps / numSteps.Count));
 			}
 
             Debug.Log("Finalizing...");
             System.DateTime finalizationStart = System.DateTime.Now;
 
-            double[,] heightBuffer = Height.FinalizeHeight(ref layers);
+            float[,] heightBuffer = Height.FinalizeHeight(ref layers);
 
-            double[,] sedimentBuffer = Conversion.ExtractBufferLayer(layers, (int) Erosion.LayerName.Sediment);
+            float[,] sedimentBuffer = Conversion.ExtractBufferLayer(layers, (int) Erosion.LayerName.Sediment);
             Height.NormalizeHeight(ref sedimentBuffer);
             albedoBuffer = Textures.OverlaySediment(albedoBuffer, sedimentBuffer, sedimentColor);
 
