@@ -7,8 +7,8 @@ namespace StoneAge {
     public class Erosion {
 
         public enum LayerName {
-            SEDIMENT = 0,
-            ROCK = 1
+            Sediment = 0,
+            Rock
 		}
 
         private struct DropParticle {
@@ -61,17 +61,17 @@ namespace StoneAge {
             for (int y = flooredY; y <= flooredY + 1; ++y) {
                 for (int x = flooredX; x <= flooredX + 1; ++x) {
                     if (IsIndexInBounds(x, y, width, height)) {
-                        layers[x, y, (int) LayerName.SEDIMENT] += weights[x - flooredX, y - flooredY] * amount;
+                        layers[x, y, (int) LayerName.Sediment] += weights[x - flooredX, y - flooredY] * amount;
 					}
 				}
 			}
         }
 
-        public static void ErosionEvent(ref double[,,] layers) {
-            ErosionEvent(ref layers, new ErosionParameters());
+        public static int ErosionEvent(ref double[,,] layers) {
+            return ErosionEvent(ref layers, new ErosionParameters());
 		}
 
-        public static void ErosionEvent(ref double[,,] layers, ErosionParameters parameters) {
+        public static int ErosionEvent(ref double[,,] layers, ErosionParameters parameters) {
             int width = layers.GetLength(1);
             int height = layers.GetLength(0);
 
@@ -80,10 +80,17 @@ namespace StoneAge {
 
             DropParticle drop = new DropParticle(startPos, startDir);
 
+            int numSteps = 0;
+
             for (int step = 0; step < parameters.maxPath; ++step) {
                 // Check breaking conditions.
                 if (drop.water <= 0 || IsDropOutOfBounds(drop, width, height)) {
+                    numSteps = step; // TEMP
                     break;
+				}
+
+                if (step == parameters.maxPath - 1) {
+                    numSteps = step; // TEMP
 				}
 
                 // Update position and direction.
@@ -127,6 +134,8 @@ namespace StoneAge {
                 drop.speed = Mathf.Sqrt(drop.speed * drop.speed + (float) heightDifference * parameters.gravity);
                 drop.water = drop.water * (1 - parameters.evaporation);
 			}
+
+            return numSteps;
         }
 
         private static bool IsDropOutOfBounds(DropParticle drop, int width, int height) {

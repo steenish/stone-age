@@ -5,6 +5,7 @@ namespace StoneAge {
 	[CustomEditor(typeof(StoneAging))]
 	public class StoneAgingInspector : Editor {
 
+		SerializedProperty loggingLevel;
 		SerializedProperty albedoMap;
 		SerializedProperty heightMap;
 		SerializedProperty agingYears;
@@ -12,8 +13,10 @@ namespace StoneAge {
 		SerializedProperty saveToDisk;
 		SerializedProperty saveLocation;
 		SerializedProperty folderName;
+		SerializedProperty saveDebugTextures;
 
 		private void OnEnable() {
+			loggingLevel = serializedObject.FindProperty("loggingLevel");
 			albedoMap = serializedObject.FindProperty("albedoMap");
 			heightMap = serializedObject.FindProperty("heightMap");
 			agingYears = serializedObject.FindProperty("agingYears");
@@ -21,9 +24,14 @@ namespace StoneAge {
 			saveToDisk = serializedObject.FindProperty("saveToDisk");
 			saveLocation = serializedObject.FindProperty("saveLocation");
 			folderName = serializedObject.FindProperty("folderName");
+			saveDebugTextures = serializedObject.FindProperty("saveDebugTextures");
 		}
 
 		public override void OnInspectorGUI() {
+			EditorGUILayout.LabelField("Settings:");
+			EditorGUILayout.PropertyField(loggingLevel);
+
+			EditorGUILayout.Space();
 			EditorGUILayout.LabelField("Input textures:");
 			EditorGUILayout.PropertyField(albedoMap);
 			EditorGUILayout.PropertyField(heightMap);
@@ -43,6 +51,7 @@ namespace StoneAge {
 			if (saveToDisk.boolValue) {
 				EditorGUILayout.PropertyField(saveLocation);
 				EditorGUILayout.PropertyField(folderName);
+				EditorGUILayout.PropertyField(saveDebugTextures);
 			}
 
 			serializedObject.ApplyModifiedProperties();

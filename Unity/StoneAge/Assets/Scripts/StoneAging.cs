@@ -1,9 +1,18 @@
 using System.Collections.Generic;
 using UnityEngine;
 using Utility;
+using System.Linq;
 
 namespace StoneAge {
+    public enum LoggingLevel {
+        None = 0,
+        Timing,
+        Debug,
+	}
+
     public class StoneAging : MonoBehaviour {
+        [SerializeField]
+        private LoggingLevel loggingLevel = LoggingLevel.Timing;
         [SerializeField]
         Texture2D albedoMap = null;
         [SerializeField]
@@ -18,6 +27,8 @@ namespace StoneAge {
         private System.Environment.SpecialFolder saveLocation;
         [SerializeField]
         private string folderName = "StoneAge";
+        [SerializeField]
+        private bool saveDebugTextures = false;
 
         public void PerformAging() {
             if (albedoMap == null) {
@@ -38,10 +49,7 @@ namespace StoneAge {
             albedoBuffer = Conversion.CreateColorBuffer(albedoMap);
 
             double[,,] layers = new double[heightMap.width, heightMap.height, 2];
-            Conversion.FillDoubleBufferLayer(heightMap, ref layers, (int) Erosion.LayerName.ROCK);
-
-            // Sediment buffer initialized to same size as height buffer, with all zeros.
-            double[,] sedimentBuffer = new double[layers.GetLength(1), layers.GetLength(0)];
+            Conversion.FillDoubleBufferLayer(heightMap, ref layers, (int) Erosion.LayerName.Rock);
 
             LogTime("Initialization done", initializationStart);
 
@@ -51,24 +59,35 @@ namespace StoneAge {
             System.DateTime simulationStart = System.DateTime.Now;
             int rainDays = Mathf.FloorToInt(365.25f * rainRate);
 
+            List<int> numSteps = new List<int>(); // TEMP
+
             for (int year = 0; year < agingYears; ++year) {
                 System.DateTime yearStart = System.DateTime.Now;
 
                 // Perform rain erosion.
                 for (int rainDay = 0; rainDay < rainDays; ++rainDay) {
-                    Erosion.ErosionEvent(ref layers);
+                    numSteps.Add(Erosion.ErosionEvent(ref layers)); // TEMP
 				}
 
                 LogTime("Aged " + (year + 1) + " year" + ((year + 1 == 1) ? "" : "s"), yearStart);
             }
 
-
             LogTime("Aging done", simulationStart);
+
+            if (loggingLevel >= LoggingLevel.Debug) {
+                int totalSteps = numSteps.Sum();
+                int averageSteps = totalSteps / numSteps.Count;
+                int numMaxSteps = numSteps.FindAll(e => e >= 999).Count;
+                int maxStep = numSteps.Max();
+                int minStep = numSteps.Min();
+                Debug.Log("min steps: " + minStep + ", max steps: " + maxStep + ", average steps: " + averageSteps + ", times maxStep parameter reached: " + numMaxSteps + " / " + numSteps.Count + " = " + ((float) numMaxSteps / numSteps.Count));
+			}
 
             Debug.Log("Finalizing...");
             System.DateTime finalizationStart = System.DateTime.Now;
 
             double[,] heightBuffer = Height.FinalizeHeight(ref layers);
+            
             // TODO make color map.
 
             LogTime("Finalization done", finalizationStart);
@@ -82,15 +101,23 @@ namespace StoneAge {
 				Textures.SaveTextureAsPNG(Conversion.CreateTexture(albedoMap.width, albedoMap.height, albedoBuffer), savePath + "Albedo_Aged_" + agingYears + ".png");
 				Textures.SaveTextureAsPNG(Conversion.CreateTexture(heightMap.width, heightMap.height, heightBuffer), savePath + "Height_Aged_" + agingYears + ".png");
 
+                if (saveDebugTextures) {
+                    double[,] sedimentBuffer = Conversion.ExtractBufferLayer(layers, (int) Erosion.LayerName.Sediment);
+                    Height.NormalizeHeight(ref sedimentBuffer);
+                    Textures.SaveTextureAsPNG(Conversion.CreateTexture(heightMap.width, heightMap.height, sedimentBuffer), savePath + "Sediment_Buffer_" + agingYears + ".png");
+                }
+
                 LogTime("Saving done", savingStart);
 			}
 
             LogTime("All done", initializationStart);
         }
 
-        private static void LogTime(string text, System.DateTime startTime) {
-            System.TimeSpan timeDifference = System.DateTime.Now - startTime;
-            Debug.Log(text + " (" + (timeDifference.Minutes * 60 + timeDifference.Seconds + timeDifference.Milliseconds * 0.001) + " s).");
+        private void LogTime(string text, System.DateTime startTime) {
+            if (loggingLevel >= LoggingLevel.Timing) {
+                System.TimeSpan timeDifference = System.DateTime.Now - startTime;
+                Debug.Log(text + " (" + (timeDifference.Minutes * 60 + timeDifference.Seconds + timeDifference.Milliseconds * 0.001) + " s).");
+			}
         }
     }
 }
