@@ -26,7 +26,30 @@ namespace StoneAge {
         private float rainRate = 1.0f;
         [SerializeField]
         private Gradient sedimentColor;
-        // TODO add erosion parameters
+        [SerializeField]
+        private bool customErosionParameters = true;
+        [SerializeField]
+        private float inertia = 0.1f;
+        [SerializeField]
+        private float capacity = 8.0f;
+        [SerializeField]
+        private float deposition = 0.1f;
+        [SerializeField]
+        private float erosion = 0.9f;
+        [SerializeField]
+        private float evaporation = 0.05f;
+        [SerializeField]
+        private float radius = 4.0f;
+        [SerializeField]
+        private float minSlope = 0.01f;
+        [SerializeField]
+        private int maxPath = 1000;
+        [SerializeField]
+        private float gravity = 1.0f;
+        [SerializeField]
+        private float rockErosionFactor = 0.5f;
+        [SerializeField]
+        private float sedimentErosionFactor = 0.9f;
         [SerializeField]
         private bool saveToDisk = false;
         [SerializeField]
@@ -54,6 +77,8 @@ namespace StoneAge {
 
             Random.InitState(seed);
 
+            Erosion.ErosionParameters erosionParameters = new Erosion.ErosionParameters(inertia, capacity, deposition, erosion, evaporation, radius, minSlope, maxPath, gravity, sedimentErosionFactor, rockErosionFactor);
+
             // Create buffers from the input textures.
             Color[,] albedoBuffer = null;
             albedoBuffer = Conversion.CreateColorBuffer(albedoMap);
@@ -69,14 +94,18 @@ namespace StoneAge {
             System.DateTime simulationStart = System.DateTime.Now;
             int rainDays = Mathf.FloorToInt(365.25f * rainRate);
 
-            List<int> numSteps = new List<int>(); // TEMP
+            List<int> numSteps = new List<int>();
 
             for (int year = 0; year < agingYears; ++year) {
                 System.DateTime yearStart = System.DateTime.Now;
 
                 // Perform rain erosion.
                 for (int rainDay = 0; rainDay < rainDays; ++rainDay) {
-                    numSteps.Add(Erosion.ErosionEvent(ref layers)); // TEMP
+                    if (customErosionParameters) {
+                        numSteps.Add(Erosion.ErosionEvent(ref layers, erosionParameters));
+					} else {
+                        numSteps.Add(Erosion.ErosionEvent(ref layers));
+					}
 				}
 
                 LogTime("Aged " + (year + 1) + " year" + ((year + 1 == 1) ? "" : "s"), yearStart);

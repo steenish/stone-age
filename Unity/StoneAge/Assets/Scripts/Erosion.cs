@@ -28,17 +28,29 @@ namespace StoneAge {
 		}
 
         public class ErosionParameters {
-            public float blendFactor = 0.0f;
-            public float inertia = 0.1f;
-            public float capacity = 8.0f;
-            public float deposition = 0.1f;
-            public float erosion = 0.9f;
-            public float evaporation = 0.05f;
-            public float radius = 4.0f;
-            public float minSlope = 0.01f;
-            public int maxPath = 1000;
-            public float gravity = 1.0f;
-            public float[] erosionFactors = new float[] { 0.9f, 0.5f };
+            public float inertia;
+            public float capacity;
+            public float deposition;
+            public float erosion;
+            public float evaporation;
+            public float radius;
+            public float minSlope;
+            public int maxPath;
+            public float gravity;
+            public float[] erosionFactors;
+
+            public ErosionParameters(float inertia = 0.1f, float capacity = 8.0f, float deposition = 0.1f, float erosion = 0.9f, float evaporation = 0.05f, float radius = 4.0f, float minSlope = 0.01f, int maxPath = 1000, float gravity = 1.0f, float sedimentErosionFactor = 0.9f, float rockErosionFactor = 0.5f) {
+                this.inertia = inertia;
+                this.capacity = capacity;
+                this.deposition = deposition;
+                this.erosion = erosion;
+                this.evaporation = evaporation;
+                this.radius = radius;
+                this.minSlope = minSlope;
+                this.maxPath = maxPath;
+                this.gravity = gravity;
+                erosionFactors = new float[] { sedimentErosionFactor, rockErosionFactor};
+			}
 		}
 
         private static void DepositSediment(Vector2 position, ref float[,,] layers, float amount) {

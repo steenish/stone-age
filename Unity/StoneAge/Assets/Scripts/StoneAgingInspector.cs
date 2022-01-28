@@ -12,6 +12,18 @@ namespace StoneAge {
 		SerializedProperty seed;
 		SerializedProperty rainRate;
 		SerializedProperty sedimentColor;
+		SerializedProperty customErosionParameters;
+		SerializedProperty inertia;
+		SerializedProperty capacity;
+		SerializedProperty deposition;
+		SerializedProperty erosion;
+		SerializedProperty evaporation;
+		SerializedProperty radius;
+		SerializedProperty minSlope;
+		SerializedProperty maxPath;
+		SerializedProperty gravity;
+		SerializedProperty rockErosionFactor;
+		SerializedProperty sedimentErosionFactor;
 		SerializedProperty saveToDisk;
 		SerializedProperty saveLocation;
 		SerializedProperty folderName;
@@ -25,6 +37,18 @@ namespace StoneAge {
 			seed = serializedObject.FindProperty("seed");
 			rainRate = serializedObject.FindProperty("rainRate");
 			sedimentColor = serializedObject.FindProperty("sedimentColor");
+			customErosionParameters = serializedObject.FindProperty("customErosionParameters");
+			inertia = serializedObject.FindProperty("inertia");
+			capacity = serializedObject.FindProperty("capacity");
+			deposition = serializedObject.FindProperty("deposition");
+			erosion = serializedObject.FindProperty("erosion");
+			evaporation = serializedObject.FindProperty("evaporation");
+			radius = serializedObject.FindProperty("radius");
+			minSlope = serializedObject.FindProperty("minSlope");
+			maxPath = serializedObject.FindProperty("maxPath");
+			gravity = serializedObject.FindProperty("gravity");
+			rockErosionFactor = serializedObject.FindProperty("rockErosionFactor");
+			sedimentErosionFactor = serializedObject.FindProperty("sedimentErosionFactor");
 			saveToDisk = serializedObject.FindProperty("saveToDisk");
 			saveLocation = serializedObject.FindProperty("saveLocation");
 			folderName = serializedObject.FindProperty("folderName");
@@ -49,6 +73,21 @@ namespace StoneAge {
 			EditorGUILayout.LabelField("Erosion parameters:");
 			EditorGUILayout.PropertyField(rainRate);
 			EditorGUILayout.PropertyField(sedimentColor);
+			EditorGUILayout.PropertyField(customErosionParameters);
+
+			if (customErosionParameters.boolValue) {
+				EditorGUILayout.PropertyField(inertia);
+				EditorGUILayout.PropertyField(capacity);
+				EditorGUILayout.PropertyField(deposition);
+				EditorGUILayout.PropertyField(erosion);
+				EditorGUILayout.PropertyField(evaporation);
+				EditorGUILayout.PropertyField(radius);
+				EditorGUILayout.PropertyField(minSlope);
+				EditorGUILayout.PropertyField(maxPath);
+				EditorGUILayout.PropertyField(gravity);
+				EditorGUILayout.PropertyField(rockErosionFactor);
+				EditorGUILayout.PropertyField(sedimentErosionFactor);
+			}
 
 			EditorGUILayout.Space();
 			EditorGUILayout.LabelField("Export settings:");
