@@ -44,8 +44,8 @@ namespace Utility {
                 }
             }
 
-            texture.SetPixels(colors);
-            texture.Apply();
+			texture.SetPixels(colors);
+			texture.Apply();
 
             return texture;
         }

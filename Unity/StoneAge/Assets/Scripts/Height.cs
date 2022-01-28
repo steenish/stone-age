@@ -24,55 +24,45 @@ namespace Utility {
         }
 
         public static Vector2 GetInterpolatedGradient(Vector2 position, float[,,] values) {
-            System.Func<float, float, float, float, float, float, Vector2> interpolationFunction =
-                (float Pxy, float Px1y, float Pxy1, float Px1y1, float u, float v) => new Vector2((Px1y - Pxy) * (1 - v) + (Px1y1 - Pxy1) * v,  (Pxy1 - Pxy) * (1 - u) + (Px1y1 - Px1y) * u);
+			static Vector2 interpolationFunction(float Pxy, float Px1y, float Pxy1, float Px1y1, float u, float v) => new Vector2((Px1y - Pxy) * (1 - v) + (Px1y1 - Pxy1) * v, (Pxy1 - Pxy) * (1 - u) + (Px1y1 - Px1y) * u);
 
             // Linear interpolation of gradients in both directions.
             return GetInterpolatedValue(position, values, interpolationFunction);
         }
 
         public static float GetInterpolatedHeight(Vector2 position, float[,,] values) {
-            System.Func<float, float, float, float, float, float, float> interpolationFunction =
-                (float Pxy, float Px1y, float Pxy1, float Px1y1, float u, float v) => (Pxy * (1 - u) + Px1y * u) * (1 - v) + (Pxy1 * (1 - u) + Px1y1 * u) * v;
+            static float interpolationFunction(float Pxy, float Px1y, float Pxy1, float Px1y1, float u, float v) => (Pxy * (1 - u) + Px1y * u) * (1 - v) + (Pxy1 * (1 - u) + Px1y1 * u) * v;
 
             // Linear interpolation of surrounding heights.
             return GetInterpolatedValue(position, values, interpolationFunction);
         }
 
         private static T GetInterpolatedValue<T>(Vector2 position, float[,,] values, System.Func<float, float, float, float, float, float, T> interpolationFunction) {
+            int width = values.GetLength(1);
+            int height = values.GetLength(0);
+
             // Get whole and fractional parts of the coordinates.
             int x = Mathf.FloorToInt(position.x);
             int y = Mathf.FloorToInt(position.y);
             float u = position.x - x;
             float v = position.y - y;
 
-            float Px1y = GetValueOrBoundary(x + 1, y, values);
-            float Pxy = GetValueOrBoundary(x, y, values);
-            float Px1y1 = GetValueOrBoundary(x + 1, y + 1, values);
-            float Pxy1 = GetValueOrBoundary(x, y + 1, values);
+            // Ensure positive coordinates, then tile the whole coordinates as well as the incremented coordinates.
+            x = TileCoordinate(x, width);
+            y = TileCoordinate(y, height);
+            int bumpedX = (x + 1) % width;
+            int bumpedY = (y + 1) % height;
+
+            float Px1y = GetAggregatedValue(bumpedX, y, values);
+            float Pxy = GetAggregatedValue(x, y, values);
+            float Px1y1 = GetAggregatedValue(bumpedX, bumpedY, values);
+            float Pxy1 = GetAggregatedValue(x, bumpedY, values);
 
             return interpolationFunction(Pxy, Px1y, Pxy1, Px1y1, u, v);
         }
-
-        public static T GetValueOrBoundary<T>(int x, int y, T[,] values) {
-            int width = values.GetLength(1);
-            int height = values.GetLength(0);
-
-            // Convert coordinates to boundary if needed.
-            x = Mathf.Clamp(x, 0, width - 1);
-            y = Mathf.Clamp(y, 0, height - 1);
-
-            return values[x, y];
-        }
         
-        public static float GetValueOrBoundary(int x, int y, float[,,] values) {
-            int width = values.GetLength(1);
-            int height = values.GetLength(0);
+        public static float GetAggregatedValue(int x, int y, float[,,] values) {
             int numLayers = values.GetLength(2);
-
-            // Convert coordinates to boundary if needed.
-            x = Mathf.Clamp(x, 0, width - 1);
-            y = Mathf.Clamp(y, 0, height - 1);
 
             float sum = 0.0f;
 
@@ -125,6 +115,22 @@ namespace Utility {
                     layers[x, y, layerIndex] = (layers[x, y, layerIndex] - minHeight) * normalizingDenominator;
                 }
             }
+        }
+
+        public static int TileCoordinate(int coordinate, int bound) {
+            int tiledCoordinate = coordinate;
+
+            // Ensure tiledCoordinate is positve by adding the right amount of bounds to reach positive.
+            if (tiledCoordinate < 0) {
+                tiledCoordinate += bound * (1 + (Mathf.Abs(coordinate) / bound));
+			}
+
+            // Tile tiledCoordinate to within bound.
+            if (tiledCoordinate >= bound) {
+                tiledCoordinate %= bound;
+			}
+
+            return tiledCoordinate;
         }
     }
 }

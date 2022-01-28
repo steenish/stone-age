@@ -27,7 +27,7 @@ namespace StoneAge {
 			}
 		}
 
-        public struct ErosionParameters {
+        public class ErosionParameters {
             public float inertia;
             public float capacity;
             public float deposition;
@@ -63,6 +63,12 @@ namespace StoneAge {
             float u = position.x - flooredX;
             float v = position.y - flooredY;
 
+            // Tile the whole coordinates.
+            flooredX = Height.TileCoordinate(flooredX, width);
+            flooredY = Height.TileCoordinate(flooredY, height);
+            int bumpedX = Height.TileCoordinate(flooredX + 1, width);
+            int bumpedY = Height.TileCoordinate(flooredY + 1, height);
+
             // Weights are reverse-linear interpolated based on u and v.
             float[,] weights = new float[2, 2];
             weights[0, 0] = (1 - v) * (1 - u);
@@ -70,13 +76,10 @@ namespace StoneAge {
             weights[0, 1] = v * (1 - u);
             weights[1, 1] = v * u;
 
-            for (int y = flooredY; y <= flooredY + 1; ++y) {
-                for (int x = flooredX; x <= flooredX + 1; ++x) {
-                    if (IsIndexInBounds(x, y, width, height)) {
-                        layers[x, y, (int) LayerName.Sediment] += weights[x - flooredX, y - flooredY] * amount;
-					}
-				}
-			}
+            layers[flooredX, flooredY, (int) LayerName.Sediment] += weights[0, 0] * amount;
+            layers[bumpedX, flooredY, (int) LayerName.Sediment] += weights[1, 0] * amount;
+            layers[flooredX, bumpedY, (int) LayerName.Sediment] += weights[0, 1] * amount;
+            layers[bumpedX, bumpedY, (int) LayerName.Sediment] += weights[1, 1] * amount;
         }
 
         public static int ErosionEvent(ref float[,,] layers) {
@@ -96,13 +99,13 @@ namespace StoneAge {
 
             for (int step = 0; step < parameters.maxPath; ++step) {
                 // Check breaking conditions.
-                if (drop.water <= 0 || IsDropOutOfBounds(drop, width, height)) {
-                    numSteps = step; // TEMP
+                if (drop.water <= 0) {
+                    numSteps = step;
                     break;
 				}
 
                 if (step == parameters.maxPath - 1) {
-                    numSteps = step; // TEMP
+                    numSteps = step;
 				}
 
                 // Update position and direction.
@@ -144,19 +147,11 @@ namespace StoneAge {
 
                 // Update speed and water.
                 drop.speed = Mathf.Sqrt(drop.speed * drop.speed +  heightDifference * parameters.gravity);
-                drop.water *= (1 - parameters.evaporation);
+                drop.water *= 1 - parameters.evaporation;
 			}
 
             return numSteps;
         }
-
-        private static bool IsDropOutOfBounds(DropParticle drop, int width, int height) {
-            return drop.position.x < 0 || drop.position.x > width || drop.position.y < 0 || drop.position.y > height;
-		}
-
-        private static bool IsIndexInBounds(int x, int y, int width, int height) {
-            return x >= 0 && x < width && y >= 0 && y < height;
-		}
 
         private static float PickUpSediment(Vector2 position, ref float[,,] layers, float radius, float amount, float[] erosionFactors) {
             int width = layers.GetLength(1);
@@ -169,7 +164,7 @@ namespace StoneAge {
             float[,] rawWeights = new float[2 * (flooredRadius + 1), 2 * (flooredRadius + 1)];
             float weightSum = 0.0f;
 
-            // First pass calculates raw weights and weight sum.
+            // First pass calculates raw weights and weight sum for nodes within radius (affected nodes).
             for (int y = flooredY - flooredRadius; y <= flooredY + flooredRadius + 1; ++y) {
                 for (int x = flooredX - flooredRadius; x <= flooredX + flooredRadius + 1; ++x) {
                     float weight = Mathf.Max(0.0f, radius - Vector2.Distance(new Vector2(x, y), position));
@@ -180,29 +175,32 @@ namespace StoneAge {
 
             float normalizationFactor = 1 / weightSum;
 
-            float totalRemoved = 0.0f;
+            // Tile the whole coordinates.
+            flooredX = Height.TileCoordinate(flooredX, width);
+            flooredY = Height.TileCoordinate(flooredY, height);
 
+            float totalRemoved = 0.0f;
             // Second pass removes sediment.
             System.Array layerNames = System.Enum.GetValues(typeof(LayerName));
             for (int y = flooredY - flooredRadius; y <= flooredY + flooredRadius + 1; ++y) {
+                int tiledY = Height.TileCoordinate(y, height);
                 for (int x = flooredX - flooredRadius; x <= flooredX + flooredRadius + 1; ++x) {
+                    int tiledX = Height.TileCoordinate(x, width);
                     float removedHeight = Mathf.Min(0.0f,  rawWeights[x - flooredX + flooredRadius, y - flooredY + flooredRadius] * normalizationFactor * amount);
-                    if (IsIndexInBounds(x, y, width, height)) {
-                        for (int i = 0; i < layerNames.Length; ++i) {
-                            int layerIndex = (int) layerNames.GetValue(i);
-                            float removedHeightLayer = removedHeight * erosionFactors[i];
-                            float heightDifference = layers[x, y, layerIndex] - removedHeightLayer;
+                    for (int i = 0; i < layerNames.Length; ++i) {
+                        int layerIndex = (int) layerNames.GetValue(i);
+                        float removedHeightLayer = removedHeight * erosionFactors[i];
+                        float heightDifference = layers[tiledX, tiledY, layerIndex] - removedHeightLayer;
 
-                            if (heightDifference >= 0.0) { // All or some of this layer was removed, no remainder to remove.
-                                layers[x, y, layerIndex] -= removedHeightLayer;
-                                totalRemoved += removedHeightLayer;
-							} else { // All of this layer was removed, with remainder for next layer.
-                                totalRemoved += layers[x, y, layerIndex];
-                                layers[x, y, layerIndex] = 0.0f;
-                                removedHeight = -heightDifference;
-                            }
+                        if (heightDifference >= 0.0) { // All or some of this layer was removed, no remainder to remove.
+                            layers[tiledX, tiledY, layerIndex] -= removedHeightLayer;
+                            totalRemoved += removedHeightLayer;
+						} else { // All of this layer was removed, with remainder for next layer.
+                            totalRemoved += layers[tiledX, tiledY, layerIndex];
+                            layers[tiledX, tiledY, layerIndex] = 0.0f;
+                            removedHeight = -heightDifference;
                         }
-					}
+                    }
                 }
             }
 
