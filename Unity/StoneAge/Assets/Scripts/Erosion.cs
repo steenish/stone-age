@@ -27,7 +27,7 @@ namespace StoneAge {
 			}
 		}
 
-        public class ErosionParameters {
+        public struct ErosionParameters {
             public float inertia;
             public float capacity;
             public float deposition;
@@ -186,7 +186,7 @@ namespace StoneAge {
             System.Array layerNames = System.Enum.GetValues(typeof(LayerName));
             for (int y = flooredY - flooredRadius; y <= flooredY + flooredRadius + 1; ++y) {
                 for (int x = flooredX - flooredRadius; x <= flooredX + flooredRadius + 1; ++x) {
-                    float removedHeight = Mathf.Min(0.0f,  (rawWeights[x - flooredX + flooredRadius, y - flooredY + flooredRadius] * normalizationFactor * amount));
+                    float removedHeight = Mathf.Min(0.0f,  rawWeights[x - flooredX + flooredRadius, y - flooredY + flooredRadius] * normalizationFactor * amount);
                     if (IsIndexInBounds(x, y, width, height)) {
                         for (int i = 0; i < layerNames.Length; ++i) {
                             int layerIndex = (int) layerNames.GetValue(i);
