@@ -86,7 +86,8 @@ namespace StoneAge {
             albedoBuffer = Conversion.CreateColorBuffer(albedoMap);
 
             float[,,] layers = new float[heightMap.width, heightMap.height, 2];
-            Conversion.FillFloatBufferLayer(heightMap, ref layers, (int) Erosion.LayerName.Rock);
+            float[,] originalRockHeight = Conversion.CreateFloatBuffer(heightMap);
+            Conversion.FillBufferLayer(originalRockHeight, ref layers, (int) Erosion.LayerName.Rock);
 
             LogTime("Initialization done", initializationStart);
 
@@ -118,7 +119,7 @@ namespace StoneAge {
             if (loggingLevel >= LoggingLevel.Debug) {
                 int totalSteps = numSteps.Sum();
                 int averageSteps = totalSteps / numSteps.Count;
-                int numMaxSteps = numSteps.FindAll(e => e >= 999).Count;
+                int numMaxSteps = numSteps.FindAll(e => e >= erosionParameters.maxPath-1).Count;
                 int maxStep = numSteps.Max();
                 int minStep = numSteps.Min();
                 Debug.Log("min steps: " + minStep + ", max steps: " + maxStep + ", average steps: " + averageSteps + ", times maxStep parameter reached: " + numMaxSteps + " / " + numSteps.Count + " = " + ( numMaxSteps / numSteps.Count));
@@ -127,11 +128,14 @@ namespace StoneAge {
             Debug.Log("Finalizing...");
             System.DateTime finalizationStart = System.DateTime.Now;
 
+            float[,] rockErosion = Conversion.DifferenceMap(originalRockHeight, Conversion.ExtractBufferLayer(layers, (int) Erosion.LayerName.Rock));
+            Height.NormalizeHeight(ref rockErosion);
+
             float[,] heightBuffer = Height.FinalizeHeight(ref layers);
 
             float[,] sedimentBuffer = Conversion.ExtractBufferLayer(layers, (int) Erosion.LayerName.Sediment);
-            Height.NormalizeHeight(ref sedimentBuffer);
-            albedoBuffer = Textures.OverlaySediment(albedoBuffer, sedimentBuffer, sedimentColor, sedimentOpacityModifier);
+			Height.NormalizeHeight(ref sedimentBuffer);
+			albedoBuffer = Textures.OverlaySediment(albedoBuffer, sedimentBuffer, sedimentColor, sedimentOpacityModifier);
 
             LogTime("Finalization done", finalizationStart);
 
@@ -145,6 +149,7 @@ namespace StoneAge {
 				Textures.SaveTextureAsPNG(Conversion.CreateTexture(heightMap.width, heightMap.height, heightBuffer), savePath + "Height_Aged_" + agingYears + ".png");
 
                 if (saveDebugTextures) {
+                    Textures.SaveTextureAsPNG(Conversion.CreateTexture(heightMap.width, heightMap.height, rockErosion), savePath + "Rock_Erosion_" + agingYears + ".png");
                     Textures.SaveTextureAsPNG(Conversion.CreateTexture(heightMap.width, heightMap.height, sedimentBuffer), savePath + "Sediment_Buffer_" + agingYears + ".png");
                 }
 

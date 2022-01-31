@@ -9,7 +9,7 @@ namespace StoneAge {
         public enum LayerName {
             Sediment = 0,
             Rock
-		}
+        }
 
         private struct DropParticle {
             public Vector2 position;
@@ -18,14 +18,14 @@ namespace StoneAge {
             public float water;
             public float sediment;
 
-			public DropParticle(Vector2 position, Vector2 direction) {
+            public DropParticle(Vector2 position, Vector2 direction) {
                 this.position = position;
                 this.direction = direction;
                 speed = 0.0f;
                 water = 1.0f;
                 sediment = 0.0f;
-			}
-		}
+            }
+        }
 
         public class ErosionParameters {
             public float inertia;
@@ -49,9 +49,9 @@ namespace StoneAge {
                 this.minSlope = minSlope;
                 this.maxPath = maxPath;
                 this.gravity = gravity;
-                erosionFactors = new float[] { sedimentErosionFactor, rockErosionFactor};
-			}
-		}
+                erosionFactors = new float[] { sedimentErosionFactor, rockErosionFactor };
+            }
+        }
 
         private static void DepositSediment(Vector2 position, ref float[,,] layers, float amount) {
             int width = layers.GetLength(1);
@@ -84,7 +84,7 @@ namespace StoneAge {
 
         public static int ErosionEvent(ref float[,,] layers) {
             return ErosionEvent(ref layers, new ErosionParameters());
-		}
+        }
 
         public static int ErosionEvent(ref float[,,] layers, ErosionParameters parameters) {
             int width = layers.GetLength(1);
@@ -102,11 +102,11 @@ namespace StoneAge {
                 if (drop.water <= 0) {
                     numSteps = step;
                     break;
-				}
+                }
 
                 if (step == parameters.maxPath - 1) {
                     numSteps = step;
-				}
+                }
 
                 // Update position and direction.
                 Vector2 gradient = Height.GetInterpolatedGradient(drop.position, layers);
@@ -114,7 +114,7 @@ namespace StoneAge {
 
                 if (newDir == Vector2.zero) {
                     newDir = Random.insideUnitCircle;
-				}
+                }
 
                 drop.direction = newDir.normalized;
 
@@ -127,28 +127,29 @@ namespace StoneAge {
                 // Update sediment.
                 if (heightDifference > 0.0f) { // New height higher than old height, drop ran uphill.
                     // Deposit sediment in the pit the drop just left.
-                    float amount = Mathf.Max( heightDifference, drop.sediment);
-                    drop.sediment -=  amount;
+                    float amount = Mathf.Max(heightDifference, drop.sediment);
+                    drop.sediment -= amount;
                     DepositSediment(oldPosition, ref layers, amount);
-				} else { // Drop ran downhill.
-                    float newCapacity = Mathf.Max( -heightDifference, parameters.minSlope) * drop.speed * drop.water * parameters.capacity;
+                } else { // Drop ran downhill.
+                    float newCapacity = Mathf.Max(-heightDifference, parameters.minSlope) * drop.speed * drop.water * parameters.capacity;
 
-                    if (drop.sediment > newCapacity) {
+                    if (drop.sediment >= newCapacity) {
                         // Deposit the right amount of sediment to obey the new capacity.
                         float amount = (drop.sediment - newCapacity) * parameters.deposition;
-                        drop.sediment -=  amount;
+                        drop.sediment -= amount;
                         DepositSediment(oldPosition, ref layers, amount);
-					} else if (drop.sediment < newCapacity) {
+                    } else {
                         // Pick up as much sediment as possible with new capacity.
-                        float amount = Mathf.Min( (newCapacity - drop.sediment) * parameters.erosion,  -heightDifference);
-                        drop.sediment +=  PickUpSediment(oldPosition, ref layers, parameters.radius, amount, parameters.erosionFactors);
-					}
-				}
+                        float amount = Mathf.Min((newCapacity - drop.sediment) * parameters.erosion, -heightDifference);
+                        drop.sediment += PickUpSediment(oldPosition, ref layers, parameters.radius, amount, parameters.erosionFactors);
+                    }
+                }
 
                 // Update speed and water.
-                drop.speed = Mathf.Sqrt(drop.speed * drop.speed +  heightDifference * parameters.gravity);
+                drop.speed = Mathf.Sqrt(drop.speed * drop.speed + heightDifference * parameters.gravity);
                 drop.water *= 1 - parameters.evaporation;
-			}
+                drop.water -= Mathf.Epsilon;
+            }
 
             return numSteps;
         }
@@ -170,8 +171,8 @@ namespace StoneAge {
                     float weight = Mathf.Max(0.0f, radius - Vector2.Distance(new Vector2(x, y), position));
                     rawWeights[x - flooredX + flooredRadius, y - flooredY + flooredRadius] = weight;
                     weightSum += weight;
-				}
-			}
+                }
+            }
 
             float normalizationFactor = 1 / weightSum;
 
@@ -181,23 +182,22 @@ namespace StoneAge {
 
             float totalRemoved = 0.0f;
             // Second pass removes sediment.
-            System.Array layerNames = System.Enum.GetValues(typeof(LayerName));
+            int numLayers = System.Enum.GetValues(typeof(LayerName)).Length;
             for (int y = flooredY - flooredRadius; y <= flooredY + flooredRadius + 1; ++y) {
                 int tiledY = Height.TileCoordinate(y, height);
                 for (int x = flooredX - flooredRadius; x <= flooredX + flooredRadius + 1; ++x) {
                     int tiledX = Height.TileCoordinate(x, width);
-                    float removedHeight = Mathf.Min(0.0f,  rawWeights[x - flooredX + flooredRadius, y - flooredY + flooredRadius] * normalizationFactor * amount);
-                    for (int i = 0; i < layerNames.Length; ++i) {
-                        int layerIndex = (int) layerNames.GetValue(i);
+					float removedHeight = Mathf.Max(0.0f, rawWeights[x - flooredX + flooredRadius, y - flooredY + flooredRadius] * normalizationFactor * amount);
+                    for (int i = 0; i < numLayers; ++i) {
                         float removedHeightLayer = removedHeight * erosionFactors[i];
-                        float heightDifference = layers[tiledX, tiledY, layerIndex] - removedHeightLayer;
-
-                        if (heightDifference >= 0.0) { // All or some of this layer was removed, no remainder to remove.
-                            layers[tiledX, tiledY, layerIndex] -= removedHeightLayer;
+                        float heightDifference = layers[tiledX, tiledY, i] - removedHeightLayer;
+                        if (heightDifference >= 0.0) { // Some (or exactly all) of this layer was removed, no remainder to remove.
+                            layers[tiledX, tiledY, i] -= removedHeightLayer;
                             totalRemoved += removedHeightLayer;
-						} else { // All of this layer was removed, with remainder for next layer.
-                            totalRemoved += layers[tiledX, tiledY, layerIndex];
-                            layers[tiledX, tiledY, layerIndex] = 0.0f;
+                            break;
+                        } else { // All of this layer was removed, with remainder for next layer.
+                            totalRemoved += layers[tiledX, tiledY, i];
+                            layers[tiledX, tiledY, i] = 0.0f;
                             removedHeight = -heightDifference;
                         }
                     }

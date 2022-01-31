@@ -87,7 +87,7 @@ namespace Utility {
             }
 
             // Normalize into 0 - 1 range.
-            float normalizingDenominator = 1 / (maxHeight - minHeight);
+            float normalizingDenominator = 1 / (maxHeight - minHeight + Mathf.Epsilon);
             for (int x = 0; x < size; ++x) {
                 for (int y = 0; y < size; ++y) {
                     heightBuffer[x, y] = (heightBuffer[x, y] - minHeight) * normalizingDenominator;
