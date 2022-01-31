@@ -12,6 +12,7 @@ namespace StoneAge {
 		SerializedProperty seed;
 		SerializedProperty rainRate;
 		SerializedProperty sedimentColor;
+		SerializedProperty sedimentOpacityModifier;
 		SerializedProperty customErosionParameters;
 		SerializedProperty inertia;
 		SerializedProperty capacity;
@@ -37,6 +38,7 @@ namespace StoneAge {
 			seed = serializedObject.FindProperty("seed");
 			rainRate = serializedObject.FindProperty("rainRate");
 			sedimentColor = serializedObject.FindProperty("sedimentColor");
+			sedimentOpacityModifier = serializedObject.FindProperty("sedimentOpacityModifier");
 			customErosionParameters = serializedObject.FindProperty("customErosionParameters");
 			inertia = serializedObject.FindProperty("inertia");
 			capacity = serializedObject.FindProperty("capacity");
@@ -73,6 +75,7 @@ namespace StoneAge {
 			EditorGUILayout.LabelField("Erosion parameters:");
 			EditorGUILayout.PropertyField(rainRate);
 			EditorGUILayout.PropertyField(sedimentColor);
+			EditorGUILayout.PropertyField(sedimentOpacityModifier);
 			EditorGUILayout.PropertyField(customErosionParameters);
 
 			if (customErosionParameters.boolValue) {

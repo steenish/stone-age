@@ -17,7 +17,7 @@ namespace Utility {
 			outputImage.texture = texture;
 		}
 
-		public static Color[,] OverlaySediment(Color[,] albedo, float[,] sediment, Gradient sedimentGradient) {
+		public static Color[,] OverlaySediment(Color[,] albedo, float[,] sediment, Gradient sedimentGradient, float sedimentOpacityModifier) {
 			int width = sediment.GetLength(1);
 			int height = sediment.GetLength(0);
 
@@ -26,7 +26,7 @@ namespace Utility {
 			for (int y = 0; y < height; ++y) {
 				for (int x = 0; x < width; ++x) {
 					Color sedimentColor = sedimentGradient.Evaluate(Random.value);
-					result[x, y] = BlendColors(sedimentColor, albedo[x, y], sediment[x, y]);
+					result[x, y] = BlendColors(sedimentColor, albedo[x, y], Mathf.Clamp01(sediment[x, y] * sedimentOpacityModifier));
 				}
 			}
 

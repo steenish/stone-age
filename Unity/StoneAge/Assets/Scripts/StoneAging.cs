@@ -27,6 +27,8 @@ namespace StoneAge {
         [SerializeField]
         private Gradient sedimentColor;
         [SerializeField]
+        private float sedimentOpacityModifier = 1.0f;
+        [SerializeField]
         private bool customErosionParameters = true;
         [SerializeField]
         private float inertia = 0.1f;
@@ -129,7 +131,7 @@ namespace StoneAge {
 
             float[,] sedimentBuffer = Conversion.ExtractBufferLayer(layers, (int) Erosion.LayerName.Sediment);
             Height.NormalizeHeight(ref sedimentBuffer);
-            albedoBuffer = Textures.OverlaySediment(albedoBuffer, sedimentBuffer, sedimentColor);
+            albedoBuffer = Textures.OverlaySediment(albedoBuffer, sedimentBuffer, sedimentColor, sedimentOpacityModifier);
 
             LogTime("Finalization done", finalizationStart);
 
