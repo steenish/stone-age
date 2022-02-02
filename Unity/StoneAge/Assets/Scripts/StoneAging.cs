@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Utility;
 using System.Linq;
+using UnityEditor;
 
 namespace StoneAge {
     public enum LoggingLevel {
@@ -79,7 +80,11 @@ namespace StoneAge {
                 return;
             }
 
+            float totalWork = agingYears + 3 + (saveToDisk ? 1 : 0);
+            float completeWork = 0;
+
             Debug.Log("Initializing...");
+            EditorUtility.DisplayProgressBar("Aging", "Initializing", completeWork++ / totalWork);
             System.DateTime initializationStart = System.DateTime.Now;
 
             Random.InitState(seed);
@@ -98,6 +103,7 @@ namespace StoneAge {
 
             // Perform the aging.
             Debug.Log("Aging...");
+            EditorUtility.DisplayProgressBar("Aging", "Aging", completeWork++ / totalWork);
 
             System.DateTime simulationStart = System.DateTime.Now;
             int rainDays = Mathf.FloorToInt(365.25f * rainRate);
@@ -116,6 +122,8 @@ namespace StoneAge {
 					}
 				}
 
+                EditorUtility.DisplayProgressBar("Aging", "Aged year " + (year + 1) + " / " + agingYears, completeWork++ / totalWork);
+
                 LogTime("Aged " + (year + 1) + " year" + ((year + 1 == 1) ? "" : "s"), yearStart);
             }
 
@@ -131,6 +139,7 @@ namespace StoneAge {
 			}
 
             Debug.Log("Finalizing...");
+            EditorUtility.DisplayProgressBar("Aging", "Finalizing", completeWork++ / totalWork);
             System.DateTime finalizationStart = System.DateTime.Now;
 
             float[,] rockErosion = Conversion.DifferenceMap(originalRockHeight, Conversion.ExtractBufferLayer(layers, (int) Erosion.LayerName.Rock));
@@ -148,6 +157,7 @@ namespace StoneAge {
 
             if (saveToDisk) {
                 Debug.Log("Saving...");
+                EditorUtility.DisplayProgressBar("Aging", "Saving", completeWork++ / totalWork);
                 System.DateTime savingStart = System.DateTime.Now;
 
                 string savePath = System.Environment.GetFolderPath(saveLocation) + "/" + folderName + "/";
@@ -162,7 +172,7 @@ namespace StoneAge {
 
                 LogTime("Saving done", savingStart);
 			}
-
+            EditorUtility.ClearProgressBar();
             LogTime("All done", initializationStart);
         }
 
