@@ -20,10 +20,15 @@ namespace StoneAge {
         [SerializeField]
         private int agingYears;
         [SerializeField]
+        private int effectiveMaxAge = 1000;
+        [SerializeField]
         private int seed;
         [SerializeField]
         [Range(0.0f, 1.0f)]
         private float rainRate = 1.0f;
+        [SerializeField]
+        [Range(1, 4)]
+        private int blurRadius = 2;
         [SerializeField]
         private Gradient sedimentColor;
         [SerializeField]
@@ -133,6 +138,8 @@ namespace StoneAge {
 
             float[,] heightBuffer = Height.FinalizeHeight(ref layers);
 
+            Textures.ColorErodedAreas(ref albedoBuffer, Textures.GaussianBlur(rockErosion, blurRadius), agingYears, effectiveMaxAge);
+
             float[,] sedimentBuffer = Conversion.ExtractBufferLayer(layers, (int) Erosion.LayerName.Sediment);
 			Height.NormalizeHeight(ref sedimentBuffer);
 			albedoBuffer = Textures.OverlaySediment(albedoBuffer, sedimentBuffer, sedimentColor, sedimentOpacityModifier);
@@ -162,7 +169,7 @@ namespace StoneAge {
         private void LogTime(string text, System.DateTime startTime) {
             if (loggingLevel >= LoggingLevel.Timing) {
                 System.TimeSpan timeDifference = System.DateTime.Now - startTime;
-                Debug.Log(text + " (" + (timeDifference.Minutes * 60 + timeDifference.Seconds + timeDifference.Milliseconds * 0.001) + " s).");
+                Debug.Log(text + " (" + (timeDifference.Hours * 3600 + timeDifference.Minutes * 60 + timeDifference.Seconds + timeDifference.Milliseconds * 0.001) + " s).");
 			}
         }
     }

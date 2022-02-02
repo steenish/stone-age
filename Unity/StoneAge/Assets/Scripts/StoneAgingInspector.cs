@@ -9,8 +9,10 @@ namespace StoneAge {
 		SerializedProperty albedoMap;
 		SerializedProperty heightMap;
 		SerializedProperty agingYears;
+		SerializedProperty effectiveMaxAge;
 		SerializedProperty seed;
 		SerializedProperty rainRate;
+		SerializedProperty blurRadius;
 		SerializedProperty sedimentColor;
 		SerializedProperty sedimentOpacityModifier;
 		SerializedProperty customErosionParameters;
@@ -35,8 +37,10 @@ namespace StoneAge {
 			albedoMap = serializedObject.FindProperty("albedoMap");
 			heightMap = serializedObject.FindProperty("heightMap");
 			agingYears = serializedObject.FindProperty("agingYears");
+			effectiveMaxAge = serializedObject.FindProperty("effectiveMaxAge");
 			seed = serializedObject.FindProperty("seed");
 			rainRate = serializedObject.FindProperty("rainRate");
+			blurRadius = serializedObject.FindProperty("blurRadius");
 			sedimentColor = serializedObject.FindProperty("sedimentColor");
 			sedimentOpacityModifier = serializedObject.FindProperty("sedimentOpacityModifier");
 			customErosionParameters = serializedObject.FindProperty("customErosionParameters");
@@ -69,11 +73,13 @@ namespace StoneAge {
 			EditorGUILayout.Space();
 			EditorGUILayout.LabelField("General parameters:");
 			EditorGUILayout.PropertyField(agingYears);
+			EditorGUILayout.PropertyField(effectiveMaxAge);
 			EditorGUILayout.PropertyField(seed);
 
 			EditorGUILayout.Space();
 			EditorGUILayout.LabelField("Erosion parameters:");
 			EditorGUILayout.PropertyField(rainRate);
+			EditorGUILayout.PropertyField(blurRadius);
 			EditorGUILayout.PropertyField(sedimentColor);
 			EditorGUILayout.PropertyField(sedimentOpacityModifier);
 			EditorGUILayout.PropertyField(customErosionParameters);
