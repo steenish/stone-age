@@ -206,7 +206,10 @@ MonoBehaviour:
   agingYears: 1
   seed: 0
   timeStep: 0.1
-  rainScale: 0.5
+  rainScale: 2
+  pipeRadius: 0.5
+  realWorldSize: 5
+  gravity: 9.82
 --- !u!4 &505168065
 Transform:
   m_ObjectHideFlags: 0

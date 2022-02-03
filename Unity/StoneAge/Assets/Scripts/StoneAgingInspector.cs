@@ -14,6 +14,9 @@ namespace StoneAge {
 		SerializedProperty seed;
 		SerializedProperty timeStep;
 		SerializedProperty rainScale;
+		SerializedProperty pipeRadius;
+		SerializedProperty realWorldSize;
+		SerializedProperty gravity;
 
 		private void OnEnable() {
 			loggingLevel = serializedObject.FindProperty("loggingLevel");
@@ -25,7 +28,9 @@ namespace StoneAge {
 			seed = serializedObject.FindProperty("seed");
 			timeStep = serializedObject.FindProperty("timeStep");
 			rainScale = serializedObject.FindProperty("rainScale");
-			
+			pipeRadius = serializedObject.FindProperty("pipeRadius");
+			realWorldSize = serializedObject.FindProperty("realWorldSize");
+			gravity = serializedObject.FindProperty("gravity");
 		}
 
 		public override void OnInspectorGUI() {
@@ -48,6 +53,9 @@ namespace StoneAge {
 			EditorGUILayout.PropertyField(seed);
 			EditorGUILayout.PropertyField(timeStep);
 			EditorGUILayout.PropertyField(rainScale);
+			EditorGUILayout.PropertyField(pipeRadius);
+			EditorGUILayout.PropertyField(realWorldSize);
+			EditorGUILayout.PropertyField(gravity);
 
 			serializedObject.ApplyModifiedProperties();
 

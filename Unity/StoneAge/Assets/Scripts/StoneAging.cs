@@ -31,6 +31,12 @@ namespace StoneAge {
         [SerializeField]
         [Range(0.0f, 2.0f)]
         private float rainScale = 0.5f;
+        [SerializeField]
+        private float pipeRadius = 0.5f;
+        [SerializeField]
+        private float realWorldSize = 5.0f;
+        [SerializeField]
+        private float gravity = 9.82f;
 
         public void PerformAging() {
             if (albedoMap == null) {
@@ -53,8 +59,7 @@ namespace StoneAge {
 
 			Random.InitState(seed);
 
-            int width = heightMap.width;
-            int height = heightMap.height;
+            int size = heightMap.width;
 
             Material setupMaterial = new Material(setupShader);
             Material erosionMaterial = new Material(erosionShader);
@@ -63,17 +68,23 @@ namespace StoneAge {
 
             RenderTexture previousRT = RenderTexture.active;
 
-            RenderTexture terrainTexture = RenderTexture.GetTemporary(width, height, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
-            RenderTexture fluxTexture = RenderTexture.GetTemporary(width, height, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
-            RenderTexture velocityTexture = RenderTexture.GetTemporary(width, height, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
+            RenderTexture terrainTexture = RenderTexture.GetTemporary(size, size, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
+            RenderTexture fluxTexture = RenderTexture.GetTemporary(size, size, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
+            RenderTexture velocityTexture = RenderTexture.GetTemporary(size, size, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
             Graphics.Blit(heightMap, terrainTexture, setupMaterial);
 
-            Texture2D noiseTexture = Textures.PerlinNoiseTexture((int) (width * 0.25f), (int) (height * 0.25f));
+            Texture2D noiseTexture = Textures.PerlinNoiseTexture((int) (size * 0.25f), (int) (size * 0.25f));
 
-            RenderTexture tempOutput = RenderTexture.GetTemporary(width, height, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
+            RenderTexture tempOutput = RenderTexture.GetTemporary(size, size, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
 
+            float pipeArea = Mathf.PI * pipeRadius * pipeRadius;
+            float scaledWorldSize = realWorldSize * 1000; // Real world size must be scaled up to achieve simulation stability.
+            float gridPointDistance = scaledWorldSize / size;
+            erosionMaterial.SetFloat("_PipeArea", pipeArea);
+            erosionMaterial.SetFloat("_GridPointDistance", gridPointDistance);
             erosionMaterial.SetFloat("_TimeStep", timeStep);
             erosionMaterial.SetFloat("_RainScale", rainScale);
+            erosionMaterial.SetFloat("_Gravity", gravity);
 
             LogTime("Initialization done", initializationStart);
 
@@ -84,7 +95,7 @@ namespace StoneAge {
 				System.DateTime yearStart = System.DateTime.Now;
 
                 if (year % 10 == 0) {
-                    noiseTexture = Textures.PerlinNoiseTexture((int) (width * 0.25f), (int) (height * 0.25f));
+                    noiseTexture = Textures.PerlinNoiseTexture((int) (size * 0.25f), (int) (size * 0.25f));
                 }
 
                 // Perform hydraulic erosion.
@@ -92,7 +103,7 @@ namespace StoneAge {
                 // Step 1
                 // Pass 0
                 erosionMaterial.SetTexture("_NoiseTex", noiseTexture);
-                Graphics.Blit(terrainTexture, tempOutput, erosionMaterial, 0); // TODO MIGHT NEED A TEMPWATER TEXTURE FOR d_1 IN PAPER
+                Graphics.Blit(terrainTexture, tempOutput, erosionMaterial, 0); // TODO MIGHT NEED A TEMP WATER TEXTURE FOR d_1 IN PAPER
                 Graphics.Blit(tempOutput, terrainTexture);
 
                 // Step 2
@@ -132,12 +143,13 @@ namespace StoneAge {
                 LogTime("Aged " + (year + 1) + " year" + ((year + 1 == 1) ? "" : "s"), yearStart);
 			}
 
-            // Save texture (debug).
-            string savePath = System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyPictures) + "/StoneAgeGPU/";
-            System.IO.Directory.CreateDirectory(savePath);
-			Textures.SaveTextureAsPNG(Textures.GetRTPixels(terrainTexture), savePath + "Test.png");
+			// Save texture (debug).
+			string savePath = System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyPictures) + "/StoneAgeGPU/";
+			System.IO.Directory.CreateDirectory(savePath);
+			Textures.SaveTextureAsPNG(Textures.GetRTPixels(terrainTexture), savePath + "Test1.png");
+			Textures.SaveTextureAsPNG(Textures.GetRTPixels(fluxTexture), savePath + "Test2.png");
 
-            RenderTexture.active = previousRT;
+			RenderTexture.active = previousRT;
 
             LogTime("Aging done", simulationStart);
 
