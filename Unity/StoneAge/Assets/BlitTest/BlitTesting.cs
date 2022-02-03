@@ -8,10 +8,11 @@ namespace StoneAge {
 
         public Texture2D inputTexture1;
         public Texture2D inputTexture2;
-		public Material blitMaterial;
+		public Shader blitShader;
 
 		public void TestBlit() {
             RenderTexture previous = RenderTexture.active;
+            Material blitMaterial = new Material(blitShader);
 
             // Pass 1
             RenderTexture tempRT = RenderTexture.GetTemporary(inputTexture1.width, inputTexture1.height, 0, RenderTextureFormat.ARGBFloat, RenderTextureReadWrite.Linear);
@@ -28,6 +29,8 @@ namespace StoneAge {
             System.IO.Directory.CreateDirectory(savePath);
             Textures.SaveTextureAsPNG(resultTexture, savePath + "Test.png");
 
+            RenderTexture.ReleaseTemporary(tempRT);
+            RenderTexture.ReleaseTemporary(finalRT);
             RenderTexture.active = previous;
         }
     }

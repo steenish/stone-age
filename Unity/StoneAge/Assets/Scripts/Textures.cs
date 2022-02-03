@@ -30,6 +30,10 @@ namespace Utility {
 			DrawTexture(Conversion.CreateTexture(width, height, data, textureName));
 		}
 
+		public static void DrawTexture(RenderTexture rt) {
+			DrawTexture(GetRTPixels(rt));
+		}
+
 		public static void DrawTexture(Texture2D texture) {
 			RawImage outputImage = GameObject.Find("DebugTextureImage").GetComponent<RawImage>();
 			outputImage.texture = texture;
@@ -161,6 +165,25 @@ namespace Utility {
 				}
 			}
 
+			return result;
+		}
+
+		public static Texture2D PerlinNoiseTexture(int width, int height) {
+			float originX = Random.Range(-50000.0f, 50000.0f);
+			float originY = Random.Range(-50000.0f, 50000.0f);
+
+			Color32[] colors = new Color32[width * height];
+
+			for (int y = 0; y < height; ++y) {
+				for (int x = 0; x < width; ++x) {
+					byte perlinValue = System.Convert.ToByte(Mathf.Clamp01(Mathf.PerlinNoise(originX + x, originY + y)) * 255);
+					colors[x + y * width] = new Color32(perlinValue, perlinValue, perlinValue, 255);
+				}
+			}
+
+			Texture2D result = new Texture2D(width, height);
+			result.SetPixels32(colors);
+			result.Apply();
 			return result;
 		}
 

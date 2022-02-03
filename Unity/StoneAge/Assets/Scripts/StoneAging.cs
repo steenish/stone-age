@@ -14,61 +14,25 @@ namespace StoneAge {
         [SerializeField]
         private LoggingLevel loggingLevel = LoggingLevel.Timing;
         [SerializeField]
+        private Shader setupShader;
+        [SerializeField]
+        private Shader erosionShader;
+        [SerializeField]
         Texture2D albedoMap = null;
         [SerializeField]
         Texture2D heightMap = null;
         [SerializeField]
         private int agingYears;
         [SerializeField]
-        private int effectiveMaxAge = 1000;
-        [SerializeField]
         private int seed;
         [SerializeField]
         [Range(0.0f, 1.0f)]
-        private float rainRate = 1.0f;
+        private float timeStep = 0.1f;
         [SerializeField]
-        [Range(1, 4)]
-        private int blurRadius = 2;
-        [SerializeField]
-        private Gradient sedimentColor;
-        [SerializeField]
-        private float sedimentOpacityModifier = 1.0f;
-        [SerializeField]
-        private bool customErosionParameters = true;
-        [SerializeField]
-        private float inertia = 0.1f;
-        [SerializeField]
-        private float capacity = 8.0f;
-        [SerializeField]
-        private float deposition = 0.1f;
-        [SerializeField]
-        private float erosion = 0.9f;
-        [SerializeField]
-        private float evaporation = 0.05f;
-        [SerializeField]
-        private float radius = 4.0f;
-        [SerializeField]
-        private float minSlope = 0.01f;
-        [SerializeField]
-        private int maxPath = 1000;
-        [SerializeField]
-        private float gravity = 1.0f;
-        [SerializeField]
-        private float rockErosionFactor = 0.5f;
-        [SerializeField]
-        private float sedimentErosionFactor = 0.9f;
-        [SerializeField]
-        private bool saveToDisk = false;
-        [SerializeField]
-        private System.Environment.SpecialFolder saveLocation;
-        [SerializeField]
-        private string folderName = "StoneAge";
-        [SerializeField]
-        private bool saveDebugTextures = false;
+        [Range(0.0f, 2.0f)]
+        private float rainScale = 0.5f;
 
         public void PerformAging() {
-            // TODO CHECK MAPS EQUAL SIZE, AND SQUARE
-
             if (albedoMap == null) {
                 Debug.LogError("No albedo map supplied.");
                 return;
@@ -79,92 +43,106 @@ namespace StoneAge {
                 return;
             }
 
+            if (albedoMap.width != albedoMap.height || albedoMap.width != heightMap.width || albedoMap.height != heightMap.height) {
+                Debug.LogError("Maps are not the same size or not square.");
+                return;
+			}
+
             Debug.Log("Initializing...");
             System.DateTime initializationStart = System.DateTime.Now;
 
-            Random.InitState(seed);
+			Random.InitState(seed);
 
-            Erosion.ErosionParameters erosionParameters = new Erosion.ErosionParameters(inertia, capacity, deposition, erosion, evaporation, radius, minSlope, maxPath, gravity, sedimentErosionFactor, rockErosionFactor);
+            int width = heightMap.width;
+            int height = heightMap.height;
 
-            // Create buffers from the input textures.
-            Color[,] albedoBuffer = null;
-            albedoBuffer = Conversion.CreateColorBuffer(albedoMap);
+            Material setupMaterial = new Material(setupShader);
+            Material erosionMaterial = new Material(erosionShader);
 
-            float[,,] layers = new float[heightMap.width, heightMap.height, 2];
-            float[,] originalRockHeight = Conversion.CreateFloatBuffer(heightMap);
-            Conversion.FillBufferLayer(originalRockHeight, ref layers, (int) Erosion.LayerName.Rock);
+            System.DateTime simulationStart = System.DateTime.Now;
+
+            RenderTexture previousRT = RenderTexture.active;
+
+            RenderTexture terrainTexture = RenderTexture.GetTemporary(width, height, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
+            RenderTexture fluxTexture = RenderTexture.GetTemporary(width, height, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
+            RenderTexture velocityTexture = RenderTexture.GetTemporary(width, height, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
+            Graphics.Blit(heightMap, terrainTexture, setupMaterial);
+
+            Texture2D noiseTexture = Textures.PerlinNoiseTexture((int) (width * 0.25f), (int) (height * 0.25f));
+
+            RenderTexture tempOutput = RenderTexture.GetTemporary(width, height, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
+
+            erosionMaterial.SetFloat("_TimeStep", timeStep);
+            erosionMaterial.SetFloat("_RainScale", rainScale);
 
             LogTime("Initialization done", initializationStart);
 
             // Perform the aging.
             Debug.Log("Aging...");
 
-            System.DateTime simulationStart = System.DateTime.Now;
-            int rainDays = Mathf.FloorToInt(365.25f * rainRate);
-
-            List<int> numSteps = new List<int>();
-
             for (int year = 0; year < agingYears; ++year) {
-                System.DateTime yearStart = System.DateTime.Now;
+				System.DateTime yearStart = System.DateTime.Now;
 
-                // Perform rain erosion.
-                for (int rainDay = 0; rainDay < rainDays; ++rainDay) {
-                    if (customErosionParameters) {
-                        numSteps.Add(Erosion.ErosionEvent(ref layers, erosionParameters));
-					} else {
-                        numSteps.Add(Erosion.ErosionEvent(ref layers));
-					}
-				}
+                if (year % 10 == 0) {
+                    noiseTexture = Textures.PerlinNoiseTexture((int) (width * 0.25f), (int) (height * 0.25f));
+                }
+
+                // Perform hydraulic erosion.
+
+                // Step 1
+                // Pass 0
+                erosionMaterial.SetTexture("_NoiseTex", noiseTexture);
+                Graphics.Blit(terrainTexture, tempOutput, erosionMaterial, 0); // TODO MIGHT NEED A TEMPWATER TEXTURE FOR d_1 IN PAPER
+                Graphics.Blit(tempOutput, terrainTexture);
+
+                // Step 2
+				// Pass 1
+				erosionMaterial.SetTexture("_TerrainTex", terrainTexture);
+				Graphics.Blit(fluxTexture, tempOutput, erosionMaterial, 1);
+                Graphics.Blit(tempOutput, fluxTexture);
+
+                // Pass 2
+                erosionMaterial.SetTexture("_FluxTex", fluxTexture);
+                Graphics.Blit(terrainTexture, tempOutput, erosionMaterial, 2);
+                Graphics.Blit(tempOutput, terrainTexture);
+
+                // Pass 3
+                erosionMaterial.SetTexture("_TerrainTex", terrainTexture);
+                erosionMaterial.SetTexture("_FluxTex", fluxTexture);
+                Graphics.Blit(velocityTexture, tempOutput, erosionMaterial, 3);
+                Graphics.Blit(tempOutput, velocityTexture);
+
+                // Step 3
+                // Pass 4
+                erosionMaterial.SetTexture("_VelocityTex", velocityTexture);
+                Graphics.Blit(terrainTexture, tempOutput, erosionMaterial, 4);
+                Graphics.Blit(tempOutput, terrainTexture);
+
+                // Step 4
+                // Pass 5
+                erosionMaterial.SetTexture("_VelocityTex", velocityTexture);
+                Graphics.Blit(terrainTexture, tempOutput, erosionMaterial, 5);
+                Graphics.Blit(tempOutput, terrainTexture);
+
+                // Step 5
+                // Pass 6
+                Graphics.Blit(terrainTexture, tempOutput, erosionMaterial, 6);
+                Graphics.Blit(tempOutput, terrainTexture);
 
                 LogTime("Aged " + (year + 1) + " year" + ((year + 1 == 1) ? "" : "s"), yearStart);
-            }
+			}
+
+            // Save texture (debug).
+            string savePath = System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyPictures) + "/StoneAgeGPU/";
+            System.IO.Directory.CreateDirectory(savePath);
+			Textures.SaveTextureAsPNG(Textures.GetRTPixels(terrainTexture), savePath + "Test.png");
+
+            RenderTexture.active = previousRT;
 
             LogTime("Aging done", simulationStart);
 
-            if (loggingLevel >= LoggingLevel.Debug) {
-                int totalSteps = numSteps.Sum();
-                int averageSteps = totalSteps / numSteps.Count;
-                int numMaxSteps = numSteps.FindAll(e => e >= erosionParameters.maxPath-1).Count;
-                int maxStep = numSteps.Max();
-                int minStep = numSteps.Min();
-                Debug.Log("min steps: " + minStep + ", max steps: " + maxStep + ", average steps: " + averageSteps + ", times maxStep parameter reached: " + numMaxSteps + " / " + numSteps.Count + " = " + ( numMaxSteps / numSteps.Count));
-			}
-
-            Debug.Log("Finalizing...");
-            System.DateTime finalizationStart = System.DateTime.Now;
-
-            float[,] rockErosion = Conversion.DifferenceMap(originalRockHeight, Conversion.ExtractBufferLayer(layers, (int) Erosion.LayerName.Rock));
-            Height.NormalizeHeight(ref rockErosion);
-
-            float[,] heightBuffer = Height.FinalizeHeight(ref layers);
-
-            Textures.ColorErodedAreas(ref albedoBuffer, Textures.GaussianBlur(rockErosion, blurRadius), agingYears, effectiveMaxAge);
-
-            float[,] sedimentBuffer = Conversion.ExtractBufferLayer(layers, (int) Erosion.LayerName.Sediment);
-			Height.NormalizeHeight(ref sedimentBuffer);
-			albedoBuffer = Textures.OverlaySediment(albedoBuffer, sedimentBuffer, sedimentColor, sedimentOpacityModifier);
-
-            LogTime("Finalization done", finalizationStart);
-
-            if (saveToDisk) {
-                Debug.Log("Saving...");
-                System.DateTime savingStart = System.DateTime.Now;
-
-                string savePath = System.Environment.GetFolderPath(saveLocation) + "/" + folderName + "/";
-                System.IO.Directory.CreateDirectory(savePath);
-				Textures.SaveTextureAsPNG(Conversion.CreateTexture(albedoMap.width, albedoMap.height, albedoBuffer), savePath + "Albedo_Aged_" + agingYears + ".png");
-				Textures.SaveTextureAsPNG(Conversion.CreateTexture(heightMap.width, heightMap.height, heightBuffer), savePath + "Height_Aged_" + agingYears + ".png");
-
-                if (saveDebugTextures) {
-                    Textures.SaveTextureAsPNG(Conversion.CreateTexture(heightMap.width, heightMap.height, rockErosion), savePath + "Rock_Erosion_" + agingYears + ".png");
-                    Textures.SaveTextureAsPNG(Conversion.CreateTexture(heightMap.width, heightMap.height, sedimentBuffer), savePath + "Sediment_Buffer_" + agingYears + ".png");
-                }
-
-                LogTime("Saving done", savingStart);
-			}
-
-            LogTime("All done", initializationStart);
-        }
+			LogTime("All done", initializationStart);
+		}
 
         private void LogTime(string text, System.DateTime startTime) {
             if (loggingLevel >= LoggingLevel.Timing) {
