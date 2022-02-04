@@ -57,8 +57,8 @@ Shader "Custom/Erosion"
 
             fixed4 frag (v2f i) : SV_Target
             {
-                fixed4 terrain = tex2D(_MainTex, i.uv);
-                fixed4 rain = tex2D(_NoiseTex, i.uv);
+                float4 terrain = tex2D(_MainTex, i.uv);
+                float4 rain = tex2D(_NoiseTex, i.uv);
                 float water = terrain.g;
                 water += _TimeStep * rain.r * _RainScale;
                 terrain.g = water;
@@ -110,19 +110,19 @@ Shader "Custom/Erosion"
             {
                 float invSize = _MainTex_TexelSize.x;
 
-                fixed4 terrain = tex2D(_TerrainTex, i.uv);
+                float4 terrain = tex2D(_TerrainTex, i.uv);
                 float4x4 neighbors = getNeighbors(_TerrainTex, invSize, i.uv);
-                fixed4 tNeighborL = neighbors[0];
-                fixed4 tNeighborT = neighbors[1];
-                fixed4 tNeighborR = neighbors[2];
-                fixed4 tNeighborB = neighbors[3];
+                float4 tNeighborL = neighbors[0];
+                float4 tNeighborT = neighbors[1];
+                float4 tNeighborR = neighbors[2];
+                float4 tNeighborB = neighbors[3];
 
                 float dhL = terrain.x + terrain.y - tNeighborL.x - tNeighborL.y;
                 float dhT = terrain.x + terrain.y - tNeighborT.x - tNeighborT.y;
                 float dhR = terrain.x + terrain.y - tNeighborR.x - tNeighborR.y;
                 float dhB = terrain.x + terrain.y - tNeighborB.x - tNeighborB.y;
 
-                fixed4 flux = tex2D(_MainTex, i.uv);
+                float4 flux = tex2D(_MainTex, i.uv);
                 float fL = flux.x;
                 float fT = flux.y;
                 float fR = flux.z;
@@ -187,9 +187,9 @@ Shader "Custom/Erosion"
                 float4 flux = tex2D(_FluxTex, i.uv);
                 float4x4 neighbors = getNeighbors(_FluxTex, invSize, i.uv);
                 float4 fNeighborL = neighbors[0];
-                fixed4 fNeighborT = neighbors[1];
-                fixed4 fNeighborR = neighbors[2];
-                fixed4 fNeighborB = neighbors[3];
+                float4 fNeighborT = neighbors[1];
+                float4 fNeighborR = neighbors[2];
+                float4 fNeighborB = neighbors[3];
 
                 float fluxIn = fNeighborL.z + fNeighborT.w + fNeighborR.x + fNeighborB.y;
                 float fluxOut = flux.x + flux.y + flux.z + flux.w;
@@ -212,6 +212,7 @@ Shader "Custom/Erosion"
             #pragma fragment frag
 
             #include "UnityCG.cginc"
+            #include "Utility.cginc"
 
             struct appdata
             {
@@ -234,11 +235,35 @@ Shader "Custom/Erosion"
             }
 
             sampler2D _MainTex;
+            sampler2D _TerrainTex;
+            sampler2D _TempTerrainTex;
+            sampler2D _FluxTex;
+            float4 _MainTex_TexelSize;
+            float _GridPointDistance;
+            float _TimeStep;
 
             fixed4 frag (v2f i) : SV_Target
             {
-                fixed4 col = tex2D(_MainTex, i.uv);
-                return col;
+                float invSize = _MainTex_TexelSize.x;
+
+                float4 flux = tex2D(_FluxTex, i.uv);
+                float4x4 neighbors = getNeighbors(_FluxTex, invSize, i.uv);
+                float4 fNeighborL = neighbors[0];
+                float4 fNeighborT = neighbors[1];
+                float4 fNeighborR = neighbors[2];
+                float4 fNeighborB = neighbors[3];
+
+                float2 dW = 0.5 * float2(fNeighborL.z - flux.x + flux.z - fNeighborR.x, fNeighborB.y - flux.w + flux.y - fNeighborT.w);
+
+                float2 velocity = (tex2D(_MainTex, i.uv).xy - 0.5) * 2;
+
+                float water1 = tex2D(_TerrainTex, i.uv).y;
+                float water2 = tex2D(_TempTerrainTex, i.uv).y;
+                float dBar = (water1 + water2) * 0.5;
+                
+                velocity += _TimeStep * (dW / (_GridPointDistance * dBar));
+
+                return float4((velocity.xy + 1) * 0.5, 0.0, 1.0);
             }
             ENDCG
         }
@@ -277,7 +302,7 @@ Shader "Custom/Erosion"
 
             fixed4 frag (v2f i) : SV_Target
             {
-                fixed4 col = tex2D(_MainTex, i.uv);
+                float4 col = tex2D(_MainTex, i.uv);
                 return col;
             }
             ENDCG
@@ -317,7 +342,7 @@ Shader "Custom/Erosion"
 
             fixed4 frag(v2f i) : SV_Target
             {
-                fixed4 col = tex2D(_MainTex, i.uv);
+                float4 col = tex2D(_MainTex, i.uv);
                 return col;
             }
             ENDCG
@@ -357,7 +382,7 @@ Shader "Custom/Erosion"
 
             fixed4 frag(v2f i) : SV_Target
             {
-                fixed4 col = tex2D(_MainTex, i.uv);
+                float4 col = tex2D(_MainTex, i.uv);
                 return col;
             }
             ENDCG

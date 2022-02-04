@@ -203,7 +203,7 @@ MonoBehaviour:
   erosionShader: {fileID: 4800000, guid: 91cf3730de0957d46a5fc16292cc2893, type: 3}
   albedoMap: {fileID: 2800000, guid: 542b35f29b325bb43a6f988dde069add, type: 3}
   heightMap: {fileID: 2800000, guid: 759f7df50bc5fdf4d8359639c677996a, type: 3}
-  agingYears: 1
+  numSteps: 1
   seed: 0
   timeStep: 0.1
   rainScale: 2

@@ -22,7 +22,7 @@ namespace StoneAge {
         [SerializeField]
         Texture2D heightMap = null;
         [SerializeField]
-        private int agingYears;
+        private int numSteps;
         [SerializeField]
         private int seed;
         [SerializeField]
@@ -68,18 +68,20 @@ namespace StoneAge {
 
             RenderTexture previousRT = RenderTexture.active;
 
+            RenderTexture tempOutput = RenderTexture.GetTemporary(size, size, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
+
             RenderTexture terrainTexture = RenderTexture.GetTemporary(size, size, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
             RenderTexture fluxTexture = RenderTexture.GetTemporary(size, size, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
             RenderTexture velocityTexture = RenderTexture.GetTemporary(size, size, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
-            Graphics.Blit(heightMap, terrainTexture, setupMaterial);
+            Graphics.Blit(heightMap, terrainTexture, setupMaterial, 0);
+            Graphics.Blit(velocityTexture, tempOutput, setupMaterial, 1);
+            Graphics.Blit(tempOutput, velocityTexture);
 
             RenderTexture tempTerrainTexture1 = RenderTexture.GetTemporary(size, size, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
             RenderTexture tempTerrainTexture2 = RenderTexture.GetTemporary(size, size, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
             RenderTexture tempTerrainTexture3 = RenderTexture.GetTemporary(size, size, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
 
             Texture2D noiseTexture = Textures.PerlinNoiseTexture(size, size);
-
-            RenderTexture tempOutput = RenderTexture.GetTemporary(size, size, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
 
             float pipeArea = Mathf.PI * pipeRadius * pipeRadius;
             float scaledWorldSize = realWorldSize * 1000; // Real world size must be scaled up to achieve simulation stability.
@@ -98,14 +100,14 @@ namespace StoneAge {
             // Perform the aging.
             Debug.Log("Aging...");
 
-            for (int year = 0; year < agingYears; ++year) {
-				System.DateTime yearStart = System.DateTime.Now;
+            for (int step = 0; step < numSteps; ++step) {
+				System.DateTime stepStart = System.DateTime.Now;
 
-                if (year % 10 == 0) {
+                if (step % 10 == 0) {
                     noiseTexture = Textures.PerlinNoiseTexture(size, size);
                 }
 
-                // Perform hydraulic erosion.
+                // Perform hydraulic erosion. TODO CHECK BOUNDARY CONDITIONS (NO SLIP/TILING?)
 
                 // Step 1
                 // Pass 0
@@ -121,9 +123,6 @@ namespace StoneAge {
                 // Pass 2
                 erosionMaterial.SetTexture("_FluxTex", fluxTexture);
                 Graphics.Blit(tempTerrainTexture1, tempTerrainTexture2, erosionMaterial, 2);
-
-                Textures.SaveTextureAsPNG(Textures.GetRTPixels(tempTerrainTexture1), savePath + "Test3.png");
-                Textures.SaveTextureAsPNG(Textures.GetRTPixels(tempTerrainTexture2), savePath + "Test4.png");
 
                 // Pass 3
                 erosionMaterial.SetTexture("_TerrainTex", tempTerrainTexture1);
@@ -147,18 +146,19 @@ namespace StoneAge {
                 // Pass 6
                 Graphics.Blit(tempTerrainTexture3, terrainTexture, erosionMaterial, 6);
 
-                LogTime("Aged " + (year + 1) + " year" + ((year + 1 == 1) ? "" : "s"), yearStart);
+                LogTime("Aged " + (step + 1) + " step" + ((step + 1 == 1) ? "" : "s"), stepStart);
 			}
 
 			// Save texture (debug).
 			Textures.SaveTextureAsPNG(Textures.GetRTPixels(terrainTexture), savePath + "Test1.png");
 			Textures.SaveTextureAsPNG(Textures.GetRTPixels(fluxTexture), savePath + "Test2.png");
-			
+            Textures.SaveTextureAsPNG(Textures.GetRTPixels(velocityTexture), savePath + "Test3.png");
+
             // TODO FINALIZE HEIGHT MAP
             // TODO CREATE COLOR MAP
 
             // Clean up. TODO RELEASE TEMPORARY RTs
-			RenderTexture.active = previousRT;
+            RenderTexture.active = previousRT;
 
             LogTime("Aging done", simulationStart);
 

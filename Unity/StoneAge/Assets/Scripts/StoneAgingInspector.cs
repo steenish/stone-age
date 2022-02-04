@@ -10,7 +10,7 @@ namespace StoneAge {
 		SerializedProperty erosionShader;
 		SerializedProperty albedoMap;
 		SerializedProperty heightMap;
-		SerializedProperty agingYears;
+		SerializedProperty numSteps;
 		SerializedProperty seed;
 		SerializedProperty timeStep;
 		SerializedProperty rainScale;
@@ -24,7 +24,7 @@ namespace StoneAge {
 			erosionShader = serializedObject.FindProperty("erosionShader");
 			albedoMap = serializedObject.FindProperty("albedoMap");
 			heightMap = serializedObject.FindProperty("heightMap");
-			agingYears = serializedObject.FindProperty("agingYears");
+			numSteps = serializedObject.FindProperty("numSteps");
 			seed = serializedObject.FindProperty("seed");
 			timeStep = serializedObject.FindProperty("timeStep");
 			rainScale = serializedObject.FindProperty("rainScale");
@@ -49,8 +49,8 @@ namespace StoneAge {
 
 			EditorGUILayout.Space();
 			EditorGUILayout.LabelField("Simulation parameters:");
-			EditorGUILayout.PropertyField(agingYears);
 			EditorGUILayout.PropertyField(seed);
+			EditorGUILayout.PropertyField(numSteps);
 			EditorGUILayout.PropertyField(timeStep);
 			EditorGUILayout.PropertyField(rainScale);
 			EditorGUILayout.PropertyField(pipeRadius);
