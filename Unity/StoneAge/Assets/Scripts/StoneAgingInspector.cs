@@ -17,6 +17,10 @@ namespace StoneAge {
 		SerializedProperty pipeRadius;
 		SerializedProperty realWorldSize;
 		SerializedProperty gravity;
+		SerializedProperty minTiltAngle;
+		SerializedProperty capacityModifier;
+		SerializedProperty dissolvingModifier;
+		SerializedProperty depositionModifier;
 
 		private void OnEnable() {
 			loggingLevel = serializedObject.FindProperty("loggingLevel");
@@ -31,6 +35,10 @@ namespace StoneAge {
 			pipeRadius = serializedObject.FindProperty("pipeRadius");
 			realWorldSize = serializedObject.FindProperty("realWorldSize");
 			gravity = serializedObject.FindProperty("gravity");
+			minTiltAngle = serializedObject.FindProperty("minTiltAngle");
+			capacityModifier = serializedObject.FindProperty("capacityModifier");
+			dissolvingModifier = serializedObject.FindProperty("dissolvingModifier");
+			depositionModifier = serializedObject.FindProperty("depositionModifier");
 		}
 
 		public override void OnInspectorGUI() {
@@ -56,6 +64,10 @@ namespace StoneAge {
 			EditorGUILayout.PropertyField(pipeRadius);
 			EditorGUILayout.PropertyField(realWorldSize);
 			EditorGUILayout.PropertyField(gravity);
+			EditorGUILayout.PropertyField(minTiltAngle);
+			EditorGUILayout.PropertyField(capacityModifier);
+			EditorGUILayout.PropertyField(dissolvingModifier);
+			EditorGUILayout.PropertyField(depositionModifier);
 
 			serializedObject.ApplyModifiedProperties();
 

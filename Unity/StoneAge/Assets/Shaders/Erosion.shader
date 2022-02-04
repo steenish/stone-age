@@ -13,6 +13,10 @@ Shader "Custom/Erosion"
         _PipeArea ("Virtual pipe cross-sectional area", Float) = 0.5
         _GridPointDistance ("Real distance between grid points", Float) = 0.5
         _Gravity ("Gravity", Float) = 9.82
+        _MinTilt ("Minimum tilt angle", Float) = 1.0
+        _CapacityConst ("Sediment capacity constant", Float) = 1.0
+        _DissolvingConst ("Dissolving constant", Float) = 1.0
+        _DepositionConst ("Deposition constant", Float) = 1.0
     }
     SubShader
     {
@@ -277,6 +281,7 @@ Shader "Custom/Erosion"
             #pragma fragment frag
 
             #include "UnityCG.cginc"
+            #include "Utility.cginc"
 
             struct appdata
             {
@@ -299,11 +304,41 @@ Shader "Custom/Erosion"
             }
 
             sampler2D _MainTex;
+            sampler2D _VelocityTex;
+            float4 _MainTex_TexelSize;
+            float _CapacityConst;
+            float _MinTilt;
+            float _DissolvingConst;
+            float _DepositionConst;
 
             fixed4 frag (v2f i) : SV_Target
             {
-                float4 col = tex2D(_MainTex, i.uv);
-                return col;
+                float invSize = _MainTex_TexelSize.x;
+
+                float3 terrain = tex2D(_MainTex, i.uv).xyz;
+                float4x4 neighbors = getNeighbors(_MainTex, invSize, i.uv);
+                float4 tNeighborL = neighbors[0];
+                float4 tNeighborT = neighbors[1];
+                float4 tNeighborR = neighbors[2];
+                float4 tNeighborB = neighbors[3];
+
+                float speed = length((tex2D(_VelocityTex, i.uv).xy - 0.5) * 2);
+
+                float3 grad = normalize(float3(tNeighborR.x - tNeighborL.x, tNeighborT.x - tNeighborB.x, 0.1));
+                float3 up = float3(0, 0, 1);
+                float tiltAngle = max(radians(_MinTilt), acos(dot(grad, up)));
+                float capacity = _CapacityConst * sin(tiltAngle) * speed;
+                
+                // If under capacity (water can pick up more), dissolve ground into suspended sediment.
+                // Otherwise, over capacity (water cannot hold this much), so drop some suspended sediment onto the ground.
+                float overCapacity = capacity <= terrain.z ? 1 : 0;
+                terrain.x = terrain.x - _DissolvingConst * (capacity - terrain.z) * (1 - overCapacity);
+                terrain.z = terrain.z + _DissolvingConst * (capacity - terrain.z) * (1 - overCapacity);
+
+                terrain.x = terrain.x + _DepositionConst * (capacity - terrain.z) * overCapacity;
+                terrain.z = terrain.z - _DepositionConst * (capacity - terrain.z) * overCapacity;
+
+                return float4(terrain.xyz, 1.0);
             }
             ENDCG
         }

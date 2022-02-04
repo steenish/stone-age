@@ -37,6 +37,15 @@ namespace StoneAge {
         private float realWorldSize = 5.0f;
         [SerializeField]
         private float gravity = 9.82f;
+        [SerializeField]
+        [Range(0.0f, 90.0f)]
+        private float minTiltAngle = 1.0f;
+        [SerializeField]
+        private float capacityModifier = 1.0f;
+        [SerializeField]
+        private float dissolvingModifier = 1.0f;
+        [SerializeField]
+        private float depositionModifier = 1.0f;
 
         public void PerformAging() {
             if (albedoMap == null) {
@@ -91,6 +100,10 @@ namespace StoneAge {
             erosionMaterial.SetFloat("_TimeStep", timeStep);
             erosionMaterial.SetFloat("_RainScale", rainScale);
             erosionMaterial.SetFloat("_Gravity", gravity);
+            erosionMaterial.SetFloat("_MinTilt", minTiltAngle);
+            erosionMaterial.SetFloat("_CapacityConst", capacityModifier);
+            erosionMaterial.SetFloat("_DissolvingConst", dissolvingModifier);
+            erosionMaterial.SetFloat("_DepositionConst", depositionModifier);
 
             LogTime("Initialization done", initializationStart);
 
