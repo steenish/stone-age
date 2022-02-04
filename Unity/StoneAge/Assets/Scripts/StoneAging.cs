@@ -18,6 +18,8 @@ namespace StoneAge {
         [SerializeField]
         private Shader erosionShader;
         [SerializeField]
+        private Shader finalizationShader;
+        [SerializeField]
         Texture2D albedoMap = null;
         [SerializeField]
         Texture2D heightMap = null;
@@ -67,7 +69,7 @@ namespace StoneAge {
                 return;
 			}
 
-            Debug.Log("Initializing...");
+            Debug.Log("Initializing.");
             System.DateTime initializationStart = System.DateTime.Now;
 
 			Random.InitState(seed);
@@ -76,8 +78,7 @@ namespace StoneAge {
 
             Material setupMaterial = new Material(setupShader);
             Material erosionMaterial = new Material(erosionShader);
-
-            System.DateTime simulationStart = System.DateTime.Now;
+            Material finalizationMaterial = new Material(finalizationShader);
 
             RenderTexture previousRT = RenderTexture.active;
 
@@ -113,16 +114,14 @@ namespace StoneAge {
 
             LogTime("Initialization done", initializationStart);
 
-            string savePath = System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyPictures) + "/StoneAgeGPU/";
-            System.IO.Directory.CreateDirectory(savePath);
-
             // Perform the aging.
-            Debug.Log("Aging...");
+            Debug.Log("Aging.");
+            System.DateTime simulationStart = System.DateTime.Now;
 
             for (int step = 0; step < numSteps; ++step) {
 				System.DateTime stepStart = System.DateTime.Now;
 
-                if (step % 10 == 0) {
+                if ((step + 1) % 10 == 0) {
                     noiseTexture = Textures.PerlinNoiseTexture(size, size);
                 }
 
@@ -168,18 +167,43 @@ namespace StoneAge {
                 LogTime("Aged " + (step + 1) + " step" + ((step + 1 == 1) ? "" : "s"), stepStart);
 			}
 
-			// Save texture (debug).
-			Textures.SaveTextureAsPNG(Textures.GetRTPixels(terrainTexture), savePath + "Test1.png");
-			Textures.SaveTextureAsPNG(Textures.GetRTPixels(fluxTexture), savePath + "Test2.png");
-			Textures.SaveTextureAsPNG(Textures.GetRTPixels(velocityTexture), savePath + "Test3.png");
+            LogTime("Aging done", simulationStart);
 
-            // TODO FINALIZE HEIGHT MAP
+            
+
+            Debug.Log("Finalizing.");
+            System.DateTime finalizationStart = System.DateTime.Now;
+
+            string savePath = System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyPictures) + "/StoneAgeGPU/";
+            System.IO.Directory.CreateDirectory(savePath);
+
+            // Save texture (debug).
+            Textures.SaveTextureAsPNG(Textures.GetRTPixels(terrainTexture), savePath + "Test1.png");
+            Textures.SaveTextureAsPNG(Textures.GetRTPixels(fluxTexture), savePath + "Test2.png");
+            Textures.SaveTextureAsPNG(Textures.GetRTPixels(velocityTexture), savePath + "Test3.png");
+
+            // Save heightmap.
+            Graphics.Blit(terrainTexture, tempOutput, finalizationMaterial, 0);
+            Texture2D newHeightMap = Textures.GetRTPixels(tempOutput);
+            Textures.SaveTextureAsPNG(newHeightMap, savePath + "Height.png");
+
+            // Save sediment map.
+            finalizationMaterial.SetTexture("_SecondTex", heightMap);
+            Graphics.Blit(newHeightMap, tempOutput, finalizationMaterial, 1);
+            Textures.SaveTextureAsPNG(Textures.GetRTPixels(tempOutput), savePath + "Sediment.png");
+            
+            // Save erosion map.
+            finalizationMaterial.SetTexture("_SecondTex", newHeightMap);
+            Graphics.Blit(heightMap, tempOutput, finalizationMaterial, 1);
+            Textures.SaveTextureAsPNG(Textures.GetRTPixels(tempOutput), savePath + "Erosion.png");
+
             // TODO CREATE COLOR MAP
 
             // Clean up. TODO RELEASE TEMPORARY RTs
             RenderTexture.active = previousRT;
 
-            LogTime("Aging done", simulationStart);
+            LogTime("Finalization done", finalizationStart);
+
 
 			LogTime("All done", initializationStart);
 		}

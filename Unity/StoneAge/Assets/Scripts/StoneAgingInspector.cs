@@ -8,6 +8,7 @@ namespace StoneAge {
 		SerializedProperty loggingLevel;
 		SerializedProperty setupShader;
 		SerializedProperty erosionShader;
+		SerializedProperty finalizationShader;
 		SerializedProperty albedoMap;
 		SerializedProperty heightMap;
 		SerializedProperty numSteps;
@@ -28,6 +29,7 @@ namespace StoneAge {
 			loggingLevel = serializedObject.FindProperty("loggingLevel");
 			setupShader = serializedObject.FindProperty("setupShader");
 			erosionShader = serializedObject.FindProperty("erosionShader");
+			finalizationShader = serializedObject.FindProperty("finalizationShader");
 			albedoMap = serializedObject.FindProperty("albedoMap");
 			heightMap = serializedObject.FindProperty("heightMap");
 			numSteps = serializedObject.FindProperty("numSteps");
@@ -53,6 +55,7 @@ namespace StoneAge {
 			EditorGUILayout.LabelField("Shader programs:");
 			EditorGUILayout.PropertyField(setupShader);
 			EditorGUILayout.PropertyField(erosionShader);
+			EditorGUILayout.PropertyField(finalizationShader);
 
 			EditorGUILayout.Space();
 			EditorGUILayout.LabelField("Input textures:");
