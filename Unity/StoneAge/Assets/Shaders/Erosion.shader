@@ -18,6 +18,7 @@ Shader "Custom/Erosion"
         _DissolvingConst ("Dissolving constant", Float) = 1.0
         _DepositionConst ("Deposition constant", Float) = 1.0
         _AdvectionConst ("Advection constant", Float) = 1.0
+        _EvaporationConst ("Evaporation constant", Float) = 1.0
     }
     SubShader
     {
@@ -424,11 +425,14 @@ Shader "Custom/Erosion"
             }
 
             sampler2D _MainTex;
+            float _TimeStep;
+            float _EvaporationConst;
 
             fixed4 frag(v2f i) : SV_Target
             {
-                float4 col = tex2D(_MainTex, i.uv);
-                return col;
+                float4 terrain = tex2D(_MainTex, i.uv);
+                terrain.y = terrain.y * (1 - _EvaporationConst * _TimeStep);
+                return terrain;
             }
             ENDCG
         }

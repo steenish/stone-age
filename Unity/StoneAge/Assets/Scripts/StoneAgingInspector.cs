@@ -22,6 +22,7 @@ namespace StoneAge {
 		SerializedProperty dissolvingModifier;
 		SerializedProperty depositionModifier;
 		SerializedProperty advectionModifier;
+		SerializedProperty evaporationModifier;
 
 		private void OnEnable() {
 			loggingLevel = serializedObject.FindProperty("loggingLevel");
@@ -41,6 +42,7 @@ namespace StoneAge {
 			dissolvingModifier = serializedObject.FindProperty("dissolvingModifier");
 			depositionModifier = serializedObject.FindProperty("depositionModifier");
 			advectionModifier = serializedObject.FindProperty("advectionModifier");
+			evaporationModifier = serializedObject.FindProperty("evaporationModifier");
 		}
 
 		public override void OnInspectorGUI() {
@@ -71,6 +73,7 @@ namespace StoneAge {
 			EditorGUILayout.PropertyField(dissolvingModifier);
 			EditorGUILayout.PropertyField(depositionModifier);
 			EditorGUILayout.PropertyField(advectionModifier);
+			EditorGUILayout.PropertyField(evaporationModifier);
 
 			serializedObject.ApplyModifiedProperties();
 

@@ -48,6 +48,8 @@ namespace StoneAge {
         private float depositionModifier = 1.0f;
         [SerializeField]
         private float advectionModifier = 1.0f;
+        [SerializeField]
+        private float evaporationModifier = 1.0f;
 
         public void PerformAging() {
             if (albedoMap == null) {
@@ -107,6 +109,7 @@ namespace StoneAge {
             erosionMaterial.SetFloat("_DissolvingConst", dissolvingModifier);
             erosionMaterial.SetFloat("_DepositionConst", depositionModifier);
             erosionMaterial.SetFloat("_AdvectionConst", advectionModifier);
+            erosionMaterial.SetFloat("_EvaporationConst", evaporationModifier);
 
             LogTime("Initialization done", initializationStart);
 
@@ -168,7 +171,7 @@ namespace StoneAge {
 			// Save texture (debug).
 			Textures.SaveTextureAsPNG(Textures.GetRTPixels(terrainTexture), savePath + "Test1.png");
 			Textures.SaveTextureAsPNG(Textures.GetRTPixels(fluxTexture), savePath + "Test2.png");
-            Textures.SaveTextureAsPNG(Textures.GetRTPixels(velocityTexture), savePath + "Test3.png");
+			Textures.SaveTextureAsPNG(Textures.GetRTPixels(velocityTexture), savePath + "Test3.png");
 
             // TODO FINALIZE HEIGHT MAP
             // TODO CREATE COLOR MAP

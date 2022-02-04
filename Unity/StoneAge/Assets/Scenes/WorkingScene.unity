@@ -215,6 +215,7 @@ MonoBehaviour:
   dissolvingModifier: 1
   depositionModifier: 1
   advectionModifier: 1
+  evaporationModifier: 1
 --- !u!4 &505168065
 Transform:
   m_ObjectHideFlags: 0
