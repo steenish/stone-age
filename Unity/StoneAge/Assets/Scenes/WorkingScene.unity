@@ -210,6 +210,11 @@ MonoBehaviour:
   pipeRadius: 2
   realWorldSize: 5
   gravity: 9.82
+  minTiltAngle: 1
+  capacityModifier: 1
+  dissolvingModifier: 1
+  depositionModifier: 1
+  advectionModifier: 1
 --- !u!4 &505168065
 Transform:
   m_ObjectHideFlags: 0

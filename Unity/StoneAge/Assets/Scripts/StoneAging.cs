@@ -46,6 +46,8 @@ namespace StoneAge {
         private float dissolvingModifier = 1.0f;
         [SerializeField]
         private float depositionModifier = 1.0f;
+        [SerializeField]
+        private float advectionModifier = 1.0f;
 
         public void PerformAging() {
             if (albedoMap == null) {
@@ -104,6 +106,7 @@ namespace StoneAge {
             erosionMaterial.SetFloat("_CapacityConst", capacityModifier);
             erosionMaterial.SetFloat("_DissolvingConst", dissolvingModifier);
             erosionMaterial.SetFloat("_DepositionConst", depositionModifier);
+            erosionMaterial.SetFloat("_AdvectionConst", advectionModifier);
 
             LogTime("Initialization done", initializationStart);
 

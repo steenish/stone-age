@@ -17,6 +17,7 @@ Shader "Custom/Erosion"
         _CapacityConst ("Sediment capacity constant", Float) = 1.0
         _DissolvingConst ("Dissolving constant", Float) = 1.0
         _DepositionConst ("Deposition constant", Float) = 1.0
+        _AdvectionConst ("Advection constant", Float) = 1.0
     }
     SubShader
     {
@@ -374,11 +375,20 @@ Shader "Custom/Erosion"
             }
 
             sampler2D _MainTex;
+            sampler2D _VelocityTex;
+            float _TimeStep;
+            float _AdvectionConst;
 
             fixed4 frag(v2f i) : SV_Target
             {
-                float4 col = tex2D(_MainTex, i.uv);
-                return col;
+                float2 velocity = (tex2D(_VelocityTex, i.uv).xy - 0.5) * 2;
+                float2 uvStep = saturate(i.uv - velocity * _TimeStep * _AdvectionConst);
+                
+                float4 terrain = tex2D(_MainTex, i.uv);
+                float s1 = tex2D(_MainTex, uvStep).z;
+                terrain.z = s1;
+
+                return terrain;
             }
             ENDCG
         }
