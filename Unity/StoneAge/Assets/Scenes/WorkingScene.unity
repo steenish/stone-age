@@ -207,7 +207,7 @@ MonoBehaviour:
   seed: 0
   timeStep: 0.1
   rainScale: 2
-  pipeRadius: 0.5
+  pipeRadius: 2
   realWorldSize: 5
   gravity: 9.82
 --- !u!4 &505168065

@@ -4,6 +4,7 @@ Shader "Custom/Erosion"
     {
         _MainTex ("Texture", 2D) = "white" {}
         _TerrainTex ("Texture", 2D) = "white" {}
+        _TempTerrainTex ("Texture", 2D) = "white" {}
         _FluxTex ("Texture", 2D) = "white" {}
         _VelocityTex ("Texture", 2D) = "white" {}
         _NoiseTex ("Texture", 2D) = "white" {}
@@ -75,6 +76,7 @@ Shader "Custom/Erosion"
             #pragma fragment frag
 
             #include "UnityCG.cginc"
+            #include "Utility.cginc"
 
             struct appdata
             {
@@ -107,16 +109,14 @@ Shader "Custom/Erosion"
             fixed4 frag(v2f i) : SV_Target
             {
                 float invSize = _MainTex_TexelSize.x;
-                float leftX = saturate(i.uv.x - 1 * invSize);
-                float upY = saturate(i.uv.y + 1 * invSize);
-                float rightX = saturate(i.uv.x + 1 * invSize);
-                float downY = saturate(i.uv.y - 1 * invSize);
 
                 fixed4 terrain = tex2D(_TerrainTex, i.uv);
-                fixed4 tNeighborL = tex2D(_TerrainTex, float2(leftX, i.uv.y));
-                fixed4 tNeighborT = tex2D(_TerrainTex, float2(i.uv.x, upY));
-                fixed4 tNeighborR = tex2D(_TerrainTex, float2(rightX, i.uv.y));
-                fixed4 tNeighborB = tex2D(_TerrainTex, float2(i.uv.x, downY));
+                float4x4 neighbors = getNeighbors(_TerrainTex, invSize, i.uv);
+                fixed4 tNeighborL = neighbors[0];
+                fixed4 tNeighborT = neighbors[1];
+                fixed4 tNeighborR = neighbors[2];
+                fixed4 tNeighborB = neighbors[3];
+
                 float dhL = terrain.x + terrain.y - tNeighborL.x - tNeighborL.y;
                 float dhT = terrain.x + terrain.y - tNeighborT.x - tNeighborT.y;
                 float dhR = terrain.x + terrain.y - tNeighborR.x - tNeighborR.y;
@@ -152,6 +152,7 @@ Shader "Custom/Erosion"
             #pragma fragment frag
 
             #include "UnityCG.cginc"
+            #include "Utility.cginc"
 
             struct appdata
             {
@@ -174,11 +175,30 @@ Shader "Custom/Erosion"
             }
 
             sampler2D _MainTex;
+            sampler2D _FluxTex;
+            float4 _MainTex_TexelSize;
+            float _TimeStep;
+            float _GridPointDistance;
 
             fixed4 frag(v2f i) : SV_Target
             {
-                fixed4 col = tex2D(_MainTex, i.uv);
-                return col;
+                float invSize = _MainTex_TexelSize.x;
+
+                float4 flux = tex2D(_FluxTex, i.uv);
+                float4x4 neighbors = getNeighbors(_FluxTex, invSize, i.uv);
+                float4 fNeighborL = neighbors[0];
+                fixed4 fNeighborT = neighbors[1];
+                fixed4 fNeighborR = neighbors[2];
+                fixed4 fNeighborB = neighbors[3];
+
+                float fluxIn = fNeighborL.z + fNeighborT.w + fNeighborR.x + fNeighborB.y;
+                float fluxOut = flux.x + flux.y + flux.z + flux.w;
+                float dV = _TimeStep * (fluxIn - fluxOut);
+
+                float4 terrain = tex2D(_MainTex, i.uv);
+                terrain.y = terrain.y + dV / (_GridPointDistance * _GridPointDistance);
+
+                return terrain;
             }
             ENDCG
         }

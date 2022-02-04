@@ -73,7 +73,11 @@ namespace StoneAge {
             RenderTexture velocityTexture = RenderTexture.GetTemporary(size, size, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
             Graphics.Blit(heightMap, terrainTexture, setupMaterial);
 
-            Texture2D noiseTexture = Textures.PerlinNoiseTexture((int) (size * 0.25f), (int) (size * 0.25f));
+            RenderTexture tempTerrainTexture1 = RenderTexture.GetTemporary(size, size, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
+            RenderTexture tempTerrainTexture2 = RenderTexture.GetTemporary(size, size, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
+            RenderTexture tempTerrainTexture3 = RenderTexture.GetTemporary(size, size, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
+
+            Texture2D noiseTexture = Textures.PerlinNoiseTexture(size, size);
 
             RenderTexture tempOutput = RenderTexture.GetTemporary(size, size, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
 
@@ -88,6 +92,9 @@ namespace StoneAge {
 
             LogTime("Initialization done", initializationStart);
 
+            string savePath = System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyPictures) + "/StoneAgeGPU/";
+            System.IO.Directory.CreateDirectory(savePath);
+
             // Perform the aging.
             Debug.Log("Aging...");
 
@@ -95,7 +102,7 @@ namespace StoneAge {
 				System.DateTime yearStart = System.DateTime.Now;
 
                 if (year % 10 == 0) {
-                    noiseTexture = Textures.PerlinNoiseTexture((int) (size * 0.25f), (int) (size * 0.25f));
+                    noiseTexture = Textures.PerlinNoiseTexture(size, size);
                 }
 
                 // Perform hydraulic erosion.
@@ -103,22 +110,24 @@ namespace StoneAge {
                 // Step 1
                 // Pass 0
                 erosionMaterial.SetTexture("_NoiseTex", noiseTexture);
-                Graphics.Blit(terrainTexture, tempOutput, erosionMaterial, 0); // TODO MIGHT NEED A TEMP WATER TEXTURE FOR d_1 IN PAPER
-                Graphics.Blit(tempOutput, terrainTexture);
+                Graphics.Blit(terrainTexture, tempTerrainTexture1, erosionMaterial, 0);
 
                 // Step 2
 				// Pass 1
-				erosionMaterial.SetTexture("_TerrainTex", terrainTexture);
+				erosionMaterial.SetTexture("_TerrainTex", tempTerrainTexture1);
 				Graphics.Blit(fluxTexture, tempOutput, erosionMaterial, 1);
                 Graphics.Blit(tempOutput, fluxTexture);
 
                 // Pass 2
                 erosionMaterial.SetTexture("_FluxTex", fluxTexture);
-                Graphics.Blit(terrainTexture, tempOutput, erosionMaterial, 2);
-                Graphics.Blit(tempOutput, terrainTexture);
+                Graphics.Blit(tempTerrainTexture1, tempTerrainTexture2, erosionMaterial, 2);
+
+                Textures.SaveTextureAsPNG(Textures.GetRTPixels(tempTerrainTexture1), savePath + "Test3.png");
+                Textures.SaveTextureAsPNG(Textures.GetRTPixels(tempTerrainTexture2), savePath + "Test4.png");
 
                 // Pass 3
-                erosionMaterial.SetTexture("_TerrainTex", terrainTexture);
+                erosionMaterial.SetTexture("_TerrainTex", tempTerrainTexture1);
+                erosionMaterial.SetTexture("_TempTerrainTex", tempTerrainTexture2);
                 erosionMaterial.SetTexture("_FluxTex", fluxTexture);
                 Graphics.Blit(velocityTexture, tempOutput, erosionMaterial, 3);
                 Graphics.Blit(tempOutput, velocityTexture);
@@ -126,29 +135,29 @@ namespace StoneAge {
                 // Step 3
                 // Pass 4
                 erosionMaterial.SetTexture("_VelocityTex", velocityTexture);
-                Graphics.Blit(terrainTexture, tempOutput, erosionMaterial, 4);
-                Graphics.Blit(tempOutput, terrainTexture);
+                Graphics.Blit(tempTerrainTexture2, tempTerrainTexture3, erosionMaterial, 4);
 
                 // Step 4
                 // Pass 5
                 erosionMaterial.SetTexture("_VelocityTex", velocityTexture);
-                Graphics.Blit(terrainTexture, tempOutput, erosionMaterial, 5);
-                Graphics.Blit(tempOutput, terrainTexture);
+                Graphics.Blit(tempTerrainTexture3, tempOutput, erosionMaterial, 5);
+                Graphics.Blit(tempOutput, tempTerrainTexture3);
 
                 // Step 5
                 // Pass 6
-                Graphics.Blit(terrainTexture, tempOutput, erosionMaterial, 6);
-                Graphics.Blit(tempOutput, terrainTexture);
+                Graphics.Blit(tempTerrainTexture3, terrainTexture, erosionMaterial, 6);
 
                 LogTime("Aged " + (year + 1) + " year" + ((year + 1 == 1) ? "" : "s"), yearStart);
 			}
 
 			// Save texture (debug).
-			string savePath = System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyPictures) + "/StoneAgeGPU/";
-			System.IO.Directory.CreateDirectory(savePath);
 			Textures.SaveTextureAsPNG(Textures.GetRTPixels(terrainTexture), savePath + "Test1.png");
 			Textures.SaveTextureAsPNG(Textures.GetRTPixels(fluxTexture), savePath + "Test2.png");
+			
+            // TODO FINALIZE HEIGHT MAP
+            // TODO CREATE COLOR MAP
 
+            // Clean up. TODO RELEASE TEMPORARY RTs
 			RenderTexture.active = previousRT;
 
             LogTime("Aging done", simulationStart);
