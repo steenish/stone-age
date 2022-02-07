@@ -125,7 +125,7 @@ namespace StoneAge {
                     noiseTexture = Textures.PerlinNoiseTexture(size, size);
                 }
 
-                // Perform hydraulic erosion. TODO CHECK BOUNDARY CONDITIONS (NO SLIP/TILING?)
+                // Perform hydraulic erosion.
 
                 // Step 1
                 // Pass 0
@@ -169,8 +169,6 @@ namespace StoneAge {
 
             LogTime("Aging done", simulationStart);
 
-            
-
             Debug.Log("Finalizing.");
             System.DateTime finalizationStart = System.DateTime.Now;
 
@@ -199,11 +197,17 @@ namespace StoneAge {
 
             // TODO CREATE COLOR MAP
 
-            // Clean up. TODO RELEASE TEMPORARY RTs
+            // Clean up.
             RenderTexture.active = previousRT;
+            RenderTexture.ReleaseTemporary(tempOutput);
+            RenderTexture.ReleaseTemporary(terrainTexture);
+            RenderTexture.ReleaseTemporary(fluxTexture);
+            RenderTexture.ReleaseTemporary(velocityTexture);
+            RenderTexture.ReleaseTemporary(tempTerrainTexture1);
+            RenderTexture.ReleaseTemporary(tempTerrainTexture2);
+            RenderTexture.ReleaseTemporary(tempTerrainTexture3);
 
             LogTime("Finalization done", finalizationStart);
-
 
 			LogTime("All done", initializationStart);
 		}

@@ -65,9 +65,7 @@ Shader "Custom/Erosion"
             {
                 float4 terrain = tex2D(_MainTex, i.uv);
                 float4 rain = tex2D(_NoiseTex, i.uv);
-                float water = terrain.g;
-                water += _TimeStep * rain.r * _RainScale;
-                terrain.g = water;
+                terrain.y += _TimeStep * rain.r * _RainScale;
                 return terrain;
             }
             ENDCG
@@ -112,6 +110,27 @@ Shader "Custom/Erosion"
             float _GridPointDistance;
             float _Gravity;
 
+            float4 checkBoundaries(float4 flux, float4 neighborCoords) {
+                // If left neighbor's x coordinate is smaller than zero, it is outside the grid, so we are at the left boundary.
+                if (neighborCoords.x < 0) {
+                    flux.x = 0;
+                }
+
+                if (neighborCoords.y > 1) {
+                    flux.y = 0;
+                }
+
+                if (neighborCoords.z > 1) {
+                    flux.z = 0;
+                }
+
+                if (neighborCoords.w < 0) {
+                    flux.w = 0;
+                }
+
+                return flux;
+            }
+
             fixed4 frag(v2f i) : SV_Target
             {
                 float invSize = _MainTex_TexelSize.x;
@@ -129,6 +148,8 @@ Shader "Custom/Erosion"
                 float dhB = terrain.x + terrain.y - tNeighborB.x - tNeighborB.y;
 
                 float4 flux = tex2D(_MainTex, i.uv);
+                float4 neighborCoords = getNeighborCoords(invSize, i.uv);
+                flux = checkBoundaries(flux, neighborCoords);
                 float fL = flux.x;
                 float fT = flux.y;
                 float fR = flux.z;
@@ -136,13 +157,15 @@ Shader "Custom/Erosion"
 
                 float pipeLength = _GridPointDistance;
 
-                fL = max(0, fL + _TimeStep * _PipeArea * (_Gravity * dhL) / pipeLength);
-                fT = max(0, fT + _TimeStep * _PipeArea * (_Gravity * dhT) / pipeLength);
-                fR = max(0, fR + _TimeStep * _PipeArea * (_Gravity * dhR) / pipeLength);
-                fB = max(0, fB + _TimeStep * _PipeArea * (_Gravity * dhB) / pipeLength);
+                fL = max(0, fL + _TimeStep * _PipeArea * _Gravity * dhL / pipeLength);
+                fT = max(0, fT + _TimeStep * _PipeArea * _Gravity * dhT / pipeLength);
+                fR = max(0, fR + _TimeStep * _PipeArea * _Gravity * dhR / pipeLength);
+                fB = max(0, fB + _TimeStep * _PipeArea * _Gravity * dhB / pipeLength);
 
-                float K = min(1, (terrain.y * _GridPointDistance * _GridPointDistance) / ((fL + fT + fR + fB) * _TimeStep));
+                float K = min(1, terrain.y * _GridPointDistance * _GridPointDistance / ((fL + fT + fR + fB) * _TimeStep));
                 flux = K * float4(fL, fT, fR, fB);
+
+                flux = checkBoundaries(flux, neighborCoords);
 
                 return flux;
             }

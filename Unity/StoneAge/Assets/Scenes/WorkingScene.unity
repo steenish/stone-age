@@ -203,7 +203,7 @@ MonoBehaviour:
   erosionShader: {fileID: 4800000, guid: 91cf3730de0957d46a5fc16292cc2893, type: 3}
   finalizationShader: {fileID: 4800000, guid: 591398c79fdc6b142950d3977718f5de, type: 3}
   albedoMap: {fileID: 2800000, guid: 542b35f29b325bb43a6f988dde069add, type: 3}
-  heightMap: {fileID: 2800000, guid: def64054ea6dca843ab36fe91605bbb4, type: 3}
+  heightMap: {fileID: 2800000, guid: 8a934eba3dca7b447b9f1bb216bd538b, type: 3}
   numSteps: 15
   seed: 0
   timeStep: 0.5
@@ -249,7 +249,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &571733592
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -671,6 +671,10 @@ PrefabInstance:
     - target: {fileID: 3792900464992215469, guid: c4316e88b8e2def43b441d9355c27da2, type: 3}
       propertyPath: m_Name
       value: Tiles4
+      objectReference: {fileID: 0}
+    - target: {fileID: 3792900464992215469, guid: c4316e88b8e2def43b441d9355c27da2, type: 3}
+      propertyPath: m_IsActive
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 3792900464992215471, guid: c4316e88b8e2def43b441d9355c27da2, type: 3}
       propertyPath: m_Materials.Array.data[0]
