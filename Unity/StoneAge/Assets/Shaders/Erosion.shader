@@ -356,12 +356,13 @@ Shader "Custom/Erosion"
                 
                 // If under capacity (water can pick up more), dissolve ground into suspended sediment.
                 // Otherwise, over capacity (water cannot hold this much), so drop some suspended sediment onto the ground.
-                float overCapacity = capacity <= terrain.z ? 1 : 0;
-                terrain.x = terrain.x - _DissolvingConst * (capacity - terrain.z) * (1 - overCapacity);
-                terrain.z = terrain.z + _DissolvingConst * (capacity - terrain.z) * (1 - overCapacity);
-
-                terrain.x = terrain.x + _DepositionConst * (capacity - terrain.z) * overCapacity;
-                terrain.z = terrain.z - _DepositionConst * (capacity - terrain.z) * overCapacity;
+                if (capacity <= terrain.z) {
+                    terrain.x = terrain.x + _DepositionConst * (terrain.z - capacity);
+                    terrain.z = terrain.z - _DepositionConst * (terrain.z - capacity);
+                } else {
+                    terrain.x = terrain.x - _DissolvingConst * (capacity - terrain.z);
+                    terrain.z = terrain.z + _DissolvingConst * (capacity - terrain.z);
+                }
 
                 return float4(terrain.xyz, 1.0);
             }
