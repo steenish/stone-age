@@ -27,6 +27,7 @@ namespace StoneAge {
             }
         }
 
+        [System.Serializable]
         public class ErosionParameters {
             public float inertia;
             public float capacity;
@@ -187,7 +188,7 @@ namespace StoneAge {
                 int tiledY = Height.TileCoordinate(y, height);
                 for (int x = flooredX - flooredRadius; x <= flooredX + flooredRadius + 1; ++x) {
                     int tiledX = Height.TileCoordinate(x, width);
-					float removedHeight = Mathf.Max(0.0f, rawWeights[x - flooredX + flooredRadius, y - flooredY + flooredRadius] * normalizationFactor * amount);
+                    float removedHeight = Mathf.Max(0.0f, rawWeights[x - flooredX + flooredRadius, y - flooredY + flooredRadius] * normalizationFactor * amount);
                     for (int i = 0; i < numLayers; ++i) {
                         float removedHeightLayer = removedHeight * erosionFactors[i];
                         float heightDifference = layers[tiledX, tiledY, i] - removedHeightLayer;

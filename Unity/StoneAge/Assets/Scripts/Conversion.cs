@@ -33,10 +33,10 @@ namespace Utility {
         }
 
         private static Texture2D CreateTexture<T>(int width, int height, T[,] data, Func<T, Color> colorExtractionFunction, string textureName = "Texture") {
-			Texture2D texture = new Texture2D(width, height) {
-				name = textureName
-			};
-			Color[] colors = new Color[width * height];
+            Texture2D texture = new Texture2D(width, height) {
+                name = textureName
+            };
+            Color[] colors = new Color[width * height];
 
             for (int y = 0; y < height; ++y) {
                 for (int x = 0; x < width; ++x) {
@@ -44,8 +44,8 @@ namespace Utility {
                 }
             }
 
-			texture.SetPixels(colors);
-			texture.Apply();
+            texture.SetPixels(colors);
+            texture.Apply();
 
             return texture;
         }
@@ -63,8 +63,8 @@ namespace Utility {
             for (int y = 0; y < height; ++y) {
                 for (int x = 0; x < width; ++x) {
                     extractedLayer[x, y] = layers[x, y, layerIndex];
-				}
-			}
+                }
+            }
 
             return extractedLayer;
         }

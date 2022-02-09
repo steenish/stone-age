@@ -14,8 +14,8 @@ namespace Utility {
                 for (int x = 0; x < width; ++x) {
                     for (int i = 0; i < numLayers; ++i) {
                         aggregateHeight[x, y] += layers[x, y, i];
-					}
-				}
+                    }
+                }
             }
 
             NormalizeHeight(ref aggregateHeight);
@@ -24,7 +24,7 @@ namespace Utility {
         }
 
         public static Vector2 GetInterpolatedGradient(Vector2 position, float[,,] values) {
-			static Vector2 interpolationFunction(float Pxy, float Px1y, float Pxy1, float Px1y1, float u, float v) => new Vector2((Px1y - Pxy) * (1 - v) + (Px1y1 - Pxy1) * v, (Pxy1 - Pxy) * (1 - u) + (Px1y1 - Px1y) * u);
+            static Vector2 interpolationFunction(float Pxy, float Px1y, float Pxy1, float Px1y1, float u, float v) => new Vector2((Px1y - Pxy) * (1 - v) + (Px1y1 - Pxy1) * v, (Pxy1 - Pxy) * (1 - u) + (Px1y1 - Px1y) * u);
 
             // Linear interpolation of gradients in both directions.
             return GetInterpolatedValue(position, values, interpolationFunction);
@@ -68,7 +68,7 @@ namespace Utility {
 
             for (int i = 0; i < numLayers; ++i) {
                 sum += values[x, y, i];
-			}
+            }
 
             return sum;
         }
@@ -123,12 +123,12 @@ namespace Utility {
             // Ensure tiledCoordinate is positve by adding the right amount of bounds to reach positive.
             if (tiledCoordinate < 0) {
                 tiledCoordinate += bound * (1 + (Mathf.Abs(coordinate) / bound));
-			}
+            }
 
             // Tile tiledCoordinate to within bound.
             if (tiledCoordinate >= bound) {
                 tiledCoordinate %= bound;
-			}
+            }
 
             return tiledCoordinate;
         }
