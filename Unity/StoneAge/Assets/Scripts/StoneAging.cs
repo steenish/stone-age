@@ -24,9 +24,9 @@ namespace StoneAge {
 
         [Header("General parameters")]
         [SerializeField]
-        private int agingYears;
+        private int numSteps;
         [SerializeField]
-        private int effectiveMaxAge = 1000;
+        private int effectiveMaxSteps = 1000;
         [SerializeField]
         private int seed;
 
@@ -57,8 +57,6 @@ namespace StoneAge {
         private bool saveDebugTextures = false;
 
         public void PerformAging() {
-            // TODO CHECK MAPS EQUAL SIZE, AND SQUARE
-
             if (albedoMap == null) {
                 Debug.LogError("No albedo map supplied.");
                 return;
@@ -74,8 +72,9 @@ namespace StoneAge {
                 return;
             }
 
-            float totalWork = agingYears + 3 + (saveToDisk ? 1 : 0);
+            float totalWork = this.numSteps + 3 + (saveToDisk ? 1 : 0);
             float completeWork = 0;
+            int size = heightMap.width;
 
             Debug.Log("Initializing...");
             EditorUtility.DisplayProgressBar("Aging", "Initializing", completeWork++ / totalWork);
@@ -88,12 +87,8 @@ namespace StoneAge {
             }
 
             // Create buffers from the input textures.
-            Color[,] albedoBuffer = null;
-            albedoBuffer = Conversion.CreateColorBuffer(albedoMap);
-
-            float[,,] layers = new float[heightMap.width, heightMap.height, 2];
-            float[,] originalRockHeight = Conversion.CreateFloatBuffer(heightMap);
-            Conversion.FillBufferLayer(originalRockHeight, ref layers, (int) Erosion.LayerName.Rock);
+            Color[,] albedoBuffer = Conversion.CreateColorBuffer(albedoMap);
+            float[,] heightBuffer = Conversion.CreateFloatBuffer(heightMap);
 
             LogTime("Initialization done", initializationStart);
 
@@ -106,21 +101,21 @@ namespace StoneAge {
 
             List<int> numSteps = new List<int>();
 
-            for (int year = 0; year < agingYears; ++year) {
-                System.DateTime yearStart = System.DateTime.Now;
+            for (int step = 0; step < this.numSteps; ++step) {
+                System.DateTime stepStart = System.DateTime.Now;
 
                 // Perform rain erosion.
                 for (int rainDay = 0; rainDay < rainDays; ++rainDay) {
                     if (customErosionParameters) {
-                        numSteps.Add(Erosion.ErosionEvent(ref layers, erosionParameters));
+                        numSteps.Add(Erosion.ErosionEvent(ref heightBuffer, erosionParameters));
                     } else {
-                        numSteps.Add(Erosion.ErosionEvent(ref layers));
+                        numSteps.Add(Erosion.ErosionEvent(ref heightBuffer));
                     }
                 }
 
-                EditorUtility.DisplayProgressBar("Aging", "Aged year " + (year + 1) + " / " + agingYears, completeWork++ / totalWork);
+                EditorUtility.DisplayProgressBar("Aging", "Aged step " + (step + 1) + " / " + this.numSteps, completeWork++ / totalWork);
 
-                LogTime("Aged " + (year + 1) + " year" + ((year + 1 == 1) ? "" : "s"), yearStart);
+                LogTime("Aged " + (step + 1) + " step" + ((step + 1 == 1) ? "" : "s"), stepStart);
             }
 
             LogTime("Aging done", simulationStart);
@@ -138,16 +133,17 @@ namespace StoneAge {
             EditorUtility.DisplayProgressBar("Aging", "Finalizing", completeWork++ / totalWork);
             System.DateTime finalizationStart = System.DateTime.Now;
 
-            float[,] rockErosion = Conversion.DifferenceMap(originalRockHeight, Conversion.ExtractBufferLayer(layers, (int) Erosion.LayerName.Rock));
-            Height.NormalizeHeight(ref rockErosion);
+            // TODO do this with shaders instead probably
+            //float[,] rockErosion = Conversion.DifferenceMap(originalRockHeight, Conversion.ExtractBufferLayer(heightBuffer, (int) Erosion.LayerName.Rock));
+            Height.NormalizeHeight(ref heightBuffer); // TODO this could be done with a shader once the max and min heights have been found
 
-            float[,] heightBuffer = Height.FinalizeHeight(ref layers);
+            // TODO do this with shaders instead probably
+            //Textures.ColorErodedAreas(ref albedoBuffer, Textures.GaussianBlur(rockErosion, blurRadius), this.numSteps, effectiveMaxSteps);
 
-            Textures.ColorErodedAreas(ref albedoBuffer, Textures.GaussianBlur(rockErosion, blurRadius), agingYears, effectiveMaxAge);
-
-            float[,] sedimentBuffer = Conversion.ExtractBufferLayer(layers, (int) Erosion.LayerName.Sediment);
-            Height.NormalizeHeight(ref sedimentBuffer);
-            albedoBuffer = Textures.OverlaySediment(albedoBuffer, sedimentBuffer, sedimentColor, sedimentOpacityModifier);
+            // TODO do this with shaders instead probably
+            //float[,] sedimentBuffer = Conversion.ExtractBufferLayer(heightBuffer, (int) Erosion.LayerName.Sediment);
+            //Height.NormalizeHeight(ref sedimentBuffer);
+            //albedoBuffer = Textures.OverlaySediment(albedoBuffer, sedimentBuffer, sedimentColor, sedimentOpacityModifier);
 
             LogTime("Finalization done", finalizationStart);
 
@@ -158,13 +154,14 @@ namespace StoneAge {
 
                 string savePath = System.Environment.GetFolderPath(saveLocation) + "/" + folderName + "/";
                 System.IO.Directory.CreateDirectory(savePath);
-                Textures.SaveTextureAsPNG(Conversion.CreateTexture(albedoMap.width, albedoMap.height, albedoBuffer), savePath + "Albedo_Aged_" + agingYears + ".png");
-                Textures.SaveTextureAsPNG(Conversion.CreateTexture(heightMap.width, heightMap.height, heightBuffer), savePath + "Height_Aged_" + agingYears + ".png");
+                Textures.SaveTextureAsPNG(Conversion.CreateTexture(albedoMap.width, albedoBuffer), savePath + "Albedo_Aged_" + this.numSteps + ".png");
+                Textures.SaveTextureAsPNG(Conversion.CreateTexture(heightMap.width, heightBuffer), savePath + "Height_Aged_" + this.numSteps + ".png");
 
-                if (saveDebugTextures) {
-                    Textures.SaveTextureAsPNG(Conversion.CreateTexture(heightMap.width, heightMap.height, rockErosion), savePath + "Rock_Erosion_" + agingYears + ".png");
-                    Textures.SaveTextureAsPNG(Conversion.CreateTexture(heightMap.width, heightMap.height, sedimentBuffer), savePath + "Sediment_Buffer_" + agingYears + ".png");
-                }
+                // TODO re-implement once the buffers are calculated again
+                //if (saveDebugTextures) {
+                //    Textures.SaveTextureAsPNG(Conversion.CreateTexture(heightMap.width, rockErosion), savePath + "Rock_Erosion_" + this.numSteps + ".png");
+                //    Textures.SaveTextureAsPNG(Conversion.CreateTexture(heightMap.width, sedimentBuffer), savePath + "Sediment_Buffer_" + this.numSteps + ".png");
+                //}
 
                 LogTime("Saving done", savingStart);
             }

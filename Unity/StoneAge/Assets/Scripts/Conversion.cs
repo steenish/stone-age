@@ -24,23 +24,23 @@ namespace Utility {
             return colors;
         }
 
-        public static Texture2D CreateTexture(int width, int height, Color[,] data, string textureName = "Texture") {
-            return CreateTexture(width, height, data, (Color color) => color, textureName);
+        public static Texture2D CreateTexture(int size, Color[,] data, string textureName = "Texture") {
+            return CreateTexture(size, data, (Color color) => color, textureName);
         }
 
-        public static Texture2D CreateTexture(int width, int height, float[,] data, string textureName = "Texture") {
-            return CreateTexture(width, height, data, (float value) => new Color(value, value, value), textureName);
+        public static Texture2D CreateTexture(int size, float[,] data, string textureName = "Texture") {
+            return CreateTexture(size, data, (float value) => new Color(value, value, value), textureName);
         }
 
-        private static Texture2D CreateTexture<T>(int width, int height, T[,] data, Func<T, Color> colorExtractionFunction, string textureName = "Texture") {
-            Texture2D texture = new Texture2D(width, height) {
+        private static Texture2D CreateTexture<T>(int size, T[,] data, Func<T, Color> colorExtractionFunction, string textureName = "Texture") {
+            Texture2D texture = new Texture2D(size, size) {
                 name = textureName
             };
-            Color[] colors = new Color[width * height];
+            Color[] colors = new Color[size * size];
 
-            for (int y = 0; y < height; ++y) {
-                for (int x = 0; x < width; ++x) {
-                    colors[y * width + x] = colorExtractionFunction(data[x, y]);
+            for (int y = 0; y < size; ++y) {
+                for (int x = 0; x < size; ++x) {
+                    colors[y * size + x] = colorExtractionFunction(data[x, y]);
                 }
             }
 
@@ -54,56 +54,13 @@ namespace Utility {
             return BinaryArithmeticMap(leftHandSide, rightHandSide, (float lhs, float rhs) => lhs - rhs);
         }
 
-        public static T[,] ExtractBufferLayer<T>(T[,,] layers, int layerIndex) {
-            int width = layers.GetLength(1);
-            int height = layers.GetLength(0);
-
-            T[,] extractedLayer = new T[width, height];
-
-            for (int y = 0; y < height; ++y) {
-                for (int x = 0; x < width; ++x) {
-                    extractedLayer[x, y] = layers[x, y, layerIndex];
-                }
-            }
-
-            return extractedLayer;
-        }
-
-        public static void FillBufferLayer<T>(T[,] buffer, ref T[,,] layers, int layerIndex) {
-            int width = buffer.GetLength(1);
-            int height = buffer.GetLength(0);
-
-            for (int y = 0; y < width; ++y) {
-                for (int x = 0; x < height; ++x) {
-                    layers[x, y, layerIndex] = buffer[x, y];
-                }
-            }
-        }
-
-        private static void FillBufferLayer<T>(Texture2D map, ref T[,,] layers, int layerIndex, Func<Color, T> valueExtractionFunction) {
-            int width = map.width;
-            int height = map.height;
-            Color[] colors = map.GetPixels();
-
-            for (int y = 0; y < width; ++y) {
-                for (int x = 0; x < height; ++x) {
-                    layers[x, y, layerIndex] = valueExtractionFunction(colors[x + y * width]);
-                }
-            }
-        }
-
-        public static void FillFloatBufferLayer(Texture2D map, ref float[,,] layers, int layerIndex) {
-            FillBufferLayer(map, ref layers, layerIndex, (Color pixelColor) => pixelColor.r);
-        }
-
         public static float Sum(float[,] buffer) {
-            int width = buffer.GetLength(1);
-            int height = buffer.GetLength(0);
+            int size = buffer.GetLength(0);
 
             float sum = 0.0f;
 
-            for (int y = 0; y < height; ++y) {
-                for (int x = 0; x < width; ++x) {
+            for (int y = 0; y < size; ++y) {
+                for (int x = 0; x < size; ++x) {
                     sum += buffer[x, y];
                 }
             }
@@ -116,13 +73,12 @@ namespace Utility {
         }
         
         private static float[,] BinaryArithmeticMap(float[,] leftHandSide, float[,] rightHandSide, Func<float, float, float> binaryArithmeticFunction) {
-            int width = leftHandSide.GetLength(1);
-            int height = leftHandSide.GetLength(0);
+            int size = leftHandSide.GetLength(0);
 
-            float[,] result = new float[width, height];
+            float[,] result = new float[size, size];
 
-            for (int y = 0; y < height; ++y) {
-                for (int x = 0; x < width; ++x) {
+            for (int y = 0; y < size; ++y) {
+                for (int x = 0; x < size; ++x) {
                     result[x, y] = binaryArithmeticFunction(leftHandSide[x, y], rightHandSide[x, y]);
                 }
             }
