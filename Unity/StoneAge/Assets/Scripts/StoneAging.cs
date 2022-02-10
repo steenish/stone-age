@@ -18,9 +18,9 @@ namespace StoneAge {
 
         [Header("Input textures")]
         [SerializeField]
-        Texture2D albedoMap = null;
+        private Texture2D albedoMap = null;
         [SerializeField]
-        Texture2D heightMap = null;
+        private Texture2D heightMap = null;
 
         [Header("General parameters")]
         [SerializeField]
@@ -42,6 +42,8 @@ namespace StoneAge {
         [SerializeField]
         private float sedimentOpacityModifier = 1.0f;
         [SerializeField]
+        private Texture2D sedimentNoise;
+        [SerializeField]
         private bool customErosionParameters = true;
         [SerializeField]
         private Erosion.ErosionParameters erosionParameters;
@@ -56,10 +58,16 @@ namespace StoneAge {
         [SerializeField]
         private bool saveDebugTextures = false;
 
-        private RenderTexture outputRT;
-        private RenderTexture previousRT;
+        public void StartAging() {
+            try {
+                PerformAging();
+			} catch (System.Exception e) {
+                CleanUp();
+                throw e;
+			}
+		}
 
-        public void PerformAging() {
+        private void PerformAging() {
             if (albedoMap == null) {
                 Debug.LogError("No albedo map supplied.");
                 return;
@@ -92,9 +100,7 @@ namespace StoneAge {
             }
 
             int size = albedoMap.width;
-            previousRT = RenderTexture.active;
-            outputRT = RenderTexture.GetTemporary(size, size, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
-
+            
             // Create buffers from the input textures.
             Color[,] albedoBuffer = null;
             albedoBuffer = Conversion.CreateColorBuffer(albedoMap);
@@ -156,16 +162,16 @@ namespace StoneAge {
             }
             System.DateTime finalizationStart = System.DateTime.Now;
 
-            float[,] rockErosion = Conversion.DifferenceMap(originalRockHeight, Conversion.ExtractBufferLayer(layers, (int) Erosion.LayerName.Rock));
-            Height.NormalizeHeight(ref rockErosion);
+            float[,] erosionBuffer = Conversion.DifferenceMap(originalRockHeight, Conversion.ExtractBufferLayer(layers, (int) Erosion.LayerName.Rock));
+            Height.NormalizeHeight(ref erosionBuffer);
 
             float[,] heightBuffer = Height.FinalizeHeight(ref layers);
 
-            Textures.ColorErodedAreas(ref albedoBuffer, Textures.GaussianBlur(rockErosion, blurRadius), agingYears, effectiveMaxAge);
+            Textures.ColorErodedAreas(ref albedoBuffer, Textures.GaussianBlur(erosionBuffer, blurRadius), agingYears, effectiveMaxAge);
 
             float[,] sedimentBuffer = Conversion.ExtractBufferLayer(layers, (int) Erosion.LayerName.Sediment);
             Height.NormalizeHeight(ref sedimentBuffer);
-            albedoBuffer = Textures.OverlaySediment(albedoBuffer, sedimentBuffer, sedimentColor, sedimentOpacityModifier);
+            albedoBuffer = Textures.OverlaySediment(albedoBuffer, sedimentBuffer, sedimentColor, sedimentOpacityModifier, sedimentNoise);
 
             Height.NormalizeHeight(ref visits);
 
@@ -185,7 +191,7 @@ namespace StoneAge {
                 Textures.SaveTextureAsPNG(Conversion.CreateTexture(size, heightBuffer), savePath + "Height_Aged_" + agingYears + ".png");
 
                 if (saveDebugTextures) {
-                    Textures.SaveTextureAsPNG(Conversion.CreateTexture(size, rockErosion), savePath + "Rock_Erosion_" + agingYears + ".png");
+                    Textures.SaveTextureAsPNG(Conversion.CreateTexture(size, erosionBuffer), savePath + "Erosion_Buffer_" + agingYears + ".png");
                     Textures.SaveTextureAsPNG(Conversion.CreateTexture(size, sedimentBuffer), savePath + "Sediment_Buffer_" + agingYears + ".png");
                     Textures.SaveTextureAsPNG(Conversion.CreateTexture(size, visits), savePath + "Visit_Buffer_" + agingYears + ".png");
                 }
@@ -205,8 +211,6 @@ namespace StoneAge {
 
         private void CleanUp() {
             EditorUtility.ClearProgressBar();
-            RenderTexture.active = previousRT;
-            RenderTexture.ReleaseTemporary(outputRT);
         }
     }
 }

@@ -13,7 +13,7 @@ namespace StoneAge {
 			EditorGUILayout.Space();
 			StoneAging scriptInstance = (StoneAging) target;
 			if (GUILayout.Button("Simulate")) {
-				scriptInstance.PerformAging();
+				scriptInstance.StartAging();
 			}
 		}
 	}

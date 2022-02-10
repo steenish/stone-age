@@ -128,14 +128,16 @@ namespace Utility {
             return kernel;
         }
 
-        public static Color[,] OverlaySediment(Color[,] albedo, float[,] sediment, Gradient sedimentGradient, float sedimentOpacityModifier) {
+        public static Color[,] OverlaySediment(Color[,] albedo, float[,] sediment, Gradient sedimentGradient, float sedimentOpacityModifier, Texture2D noise) {
             int size = sediment.GetLength(0);
 
             Color[,] result = new Color[size, size];
+            Color[] noiseColors = noise.GetPixels();
 
             for (int y = 0; y < size; ++y) {
                 for (int x = 0; x < size; ++x) {
-                    Color sedimentColor = sedimentGradient.Evaluate(Random.value);
+                    int noiseIndex = (int) (noiseColors.Length * (float) ((y * size + x) / (size * size)));
+                    Color sedimentColor = sedimentGradient.Evaluate(noiseColors[noiseIndex].r);
                     result[x, y] = BlendColors(sedimentColor, albedo[x, y], Mathf.Clamp01(sediment[x, y] * sedimentOpacityModifier));
                 }
             }
