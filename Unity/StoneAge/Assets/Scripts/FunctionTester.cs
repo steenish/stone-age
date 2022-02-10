@@ -22,7 +22,7 @@ namespace Utility {
             float[,] blurredErosion = Textures.GaussianBlur(Conversion.CreateFloatBuffer(testErosion), testRadius);
             Color[,] recoloredAlbedo = Conversion.CreateColorBuffer(testAlbedo);
             Textures.ColorErodedAreas(ref recoloredAlbedo, blurredErosion, testYears, testMaxYears);
-            Textures.SaveTextureAsPNG(Conversion.CreateTexture(testErosion.width, testErosion.height, recoloredAlbedo), path);
+            Textures.SaveTextureAsPNG(Conversion.CreateTexture(testAlbedo.width, recoloredAlbedo), path);
         }
     }
 }

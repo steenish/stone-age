@@ -9,25 +9,23 @@ namespace Utility {
         }
 
         public static void ColorErodedAreas(ref Color[,] color, float[,] erosion, int yearsAged, int maxAge = 1000) {
-            int width = color.GetLength(1);
-            int height = color.GetLength(0);
+            int size = color.GetLength(0);
 
             float effect = Mathf.Clamp01((float) yearsAged / maxAge);
 
-            for (int y = 0; y < height; ++y) {
-                for (int x = 0; x < width; ++x) {
+            for (int y = 0; y < size; ++y) {
+                for (int x = 0; x < size; ++x) {
                     float erosionAmount = Mathf.Clamp01(erosion[x, y] * 10.0f * effect);
-                    float hue, saturation, value;
-                    Color.RGBToHSV(color[x, y], out hue, out saturation, out value);
-                    saturation *= 1 - erosionAmount;
+					Color.RGBToHSV(color[x, y], out float hue, out float saturation, out float value);
+					saturation *= 1 - erosionAmount;
                     value *= Mathf.Lerp(0.4f, 1.0f, 1 - erosionAmount);
                     color[x, y] = Color.HSVToRGB(hue, saturation, value);
                 }
             }
         }
 
-        public static void DrawTexture(int width, int height, float[,] data, string textureName = "DebugTexture") {
-            DrawTexture(Conversion.CreateTexture(width, height, data, textureName));
+        public static void DrawTexture(int size, float[,] data, string textureName = "DebugTexture") {
+            DrawTexture(Conversion.CreateTexture(size, data, textureName));
         }
 
         public static void DrawTexture(Texture2D texture) {
@@ -36,18 +34,17 @@ namespace Utility {
         }
 
         public static Color[,] GaussianBlur(Color[,] albedo, int radius) {
-            int width = albedo.GetLength(1);
-            int height = albedo.GetLength(0);
+            int size = albedo.GetLength(0);
 
             float[] filter = GaussianKernel1D(radius, 0.33f * radius);
 
             // Horizontal blurring.
-            for (int y = 0; y < height; ++y) {
-                for (int x = 0; x < width; ++x) {
+            for (int y = 0; y < size; ++y) {
+                for (int x = 0; x < size; ++x) {
                     Color resultColor = Color.black;
 
                     for (int i = -radius; i < radius; ++i) {
-                        resultColor += filter[i + radius] * albedo[Height.TileCoordinate(x + i, width), y];
+                        resultColor += filter[i + radius] * albedo[Height.TileCoordinate(x + i, size), y];
                     }
 
                     resultColor.a = 1.0f;
@@ -56,12 +53,12 @@ namespace Utility {
             }
 
             // Vertical blurring.
-            for (int y = 0; y < width; ++y) {
-                for (int x = 0; x < height; ++x) {
+            for (int y = 0; y < size; ++y) {
+                for (int x = 0; x < size; ++x) {
                     Color resultColor = Color.black;
 
                     for (int i = -radius; i <= radius; ++i) {
-                        resultColor += filter[i + radius] * albedo[x, Height.TileCoordinate(y + i, height)];
+                        resultColor += filter[i + radius] * albedo[x, Height.TileCoordinate(y + i, size)];
                     }
 
                     resultColor.a = 1.0f;
@@ -73,18 +70,17 @@ namespace Utility {
         }
 
         public static float[,] GaussianBlur(float[,] values, int radius) {
-            int width = values.GetLength(1);
-            int height = values.GetLength(0);
+            int size = values.GetLength(0);
 
             float[] filter = GaussianKernel1D(radius, 0.33f * radius);
 
             // Horizontal blurring.
-            for (int y = 0; y < height; ++y) {
-                for (int x = 0; x < width; ++x) {
+            for (int y = 0; y < size; ++y) {
+                for (int x = 0; x < size; ++x) {
                     float result = 0.0f;
 
                     for (int i = -radius; i < radius; ++i) {
-                        result += filter[i + radius] * values[Height.TileCoordinate(x + i, width), y];
+                        result += filter[i + radius] * values[Height.TileCoordinate(x + i, size), y];
                     }
 
                     values[x, y] = result;
@@ -92,12 +88,12 @@ namespace Utility {
             }
 
             // Vertical blurring.
-            for (int y = 0; y < height; ++y) {
-                for (int x = 0; x < width; ++x) {
+            for (int y = 0; y < size; ++y) {
+                for (int x = 0; x < size; ++x) {
                     float result = 0.0f;
 
                     for (int i = -radius; i <= radius; ++i) {
-                        result += filter[i + radius] * values[x, Height.TileCoordinate(y + i, height)];
+                        result += filter[i + radius] * values[x, Height.TileCoordinate(y + i, size)];
                     }
 
                     values[x, y] = result;
@@ -133,13 +129,12 @@ namespace Utility {
         }
 
         public static Color[,] OverlaySediment(Color[,] albedo, float[,] sediment, Gradient sedimentGradient, float sedimentOpacityModifier) {
-            int width = sediment.GetLength(1);
-            int height = sediment.GetLength(0);
+            int size = sediment.GetLength(0);
 
-            Color[,] result = new Color[width, height];
+            Color[,] result = new Color[size, size];
 
-            for (int y = 0; y < height; ++y) {
-                for (int x = 0; x < width; ++x) {
+            for (int y = 0; y < size; ++y) {
+                for (int x = 0; x < size; ++x) {
                     Color sedimentColor = sedimentGradient.Evaluate(Random.value);
                     result[x, y] = BlendColors(sedimentColor, albedo[x, y], Mathf.Clamp01(sediment[x, y] * sedimentOpacityModifier));
                 }

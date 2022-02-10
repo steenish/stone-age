@@ -4,14 +4,13 @@ namespace Utility {
     public class Height {
 
         public static float[,] FinalizeHeight(ref float[,,] layers) {
-            int width = layers.GetLength(1);
-            int height = layers.GetLength(0);
+            int size = layers.GetLength(0);
             int numLayers = layers.GetLength(2);
 
-            float[,] aggregateHeight = new float[width, height];
+            float[,] aggregateHeight = new float[size, size];
 
-            for (int y = 0; y < height; ++y) {
-                for (int x = 0; x < width; ++x) {
+            for (int y = 0; y < size; ++y) {
+                for (int x = 0; x < size; ++x) {
                     for (int i = 0; i < numLayers; ++i) {
                         aggregateHeight[x, y] += layers[x, y, i];
                     }
@@ -38,8 +37,7 @@ namespace Utility {
         }
 
         private static T GetInterpolatedValue<T>(Vector2 position, float[,,] values, System.Func<float, float, float, float, float, float, T> interpolationFunction) {
-            int width = values.GetLength(1);
-            int height = values.GetLength(0);
+            int size = values.GetLength(0);
 
             // Get whole and fractional parts of the coordinates.
             int x = Mathf.FloorToInt(position.x);
@@ -48,10 +46,10 @@ namespace Utility {
             float v = position.y - y;
 
             // Ensure positive coordinates, then tile the whole coordinates as well as the incremented coordinates.
-            x = TileCoordinate(x, width);
-            y = TileCoordinate(y, height);
-            int bumpedX = (x + 1) % width;
-            int bumpedY = (y + 1) % height;
+            x = TileCoordinate(x, size);
+            y = TileCoordinate(y, size);
+            int bumpedX = (x + 1) % size;
+            int bumpedY = (y + 1) % size;
 
             float Px1y = GetAggregatedValue(bumpedX, y, values);
             float Pxy = GetAggregatedValue(x, y, values);

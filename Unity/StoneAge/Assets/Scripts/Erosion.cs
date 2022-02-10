@@ -40,7 +40,7 @@ namespace StoneAge {
             public float gravity;
             public float[] erosionFactors;
 
-            public ErosionParameters(float inertia = 0.1f, float capacity = 8.0f, float deposition = 0.1f, float erosion = 0.9f, float evaporation = 0.05f, float radius = 4.0f, float minSlope = 0.01f, int maxPath = 1000, float gravity = 1.0f, float sedimentErosionFactor = 0.9f, float rockErosionFactor = 0.5f) {
+            public ErosionParameters(float inertia = 0.1f, float capacity = 8.0f, float deposition = 0.1f, float erosion = 0.9f, float evaporation = 0.05f, float radius = 4.0f, float minSlope = 0.01f, int maxPath = 30, float gravity = 1.0f, float sedimentErosionFactor = 0.9f, float rockErosionFactor = 0.5f) {
                 this.inertia = inertia;
                 this.capacity = capacity;
                 this.deposition = deposition;
@@ -55,8 +55,7 @@ namespace StoneAge {
         }
 
         private static void DepositSediment(Vector2 position, ref float[,,] layers, float amount) {
-            int width = layers.GetLength(1);
-            int height = layers.GetLength(0);
+            int size = layers.GetLength(0);
 
             // Get whole and fractional parts of the coordinates.
             int flooredX = Mathf.FloorToInt(position.x);
@@ -65,10 +64,10 @@ namespace StoneAge {
             float v = position.y - flooredY;
 
             // Tile the whole coordinates.
-            flooredX = Height.TileCoordinate(flooredX, width);
-            flooredY = Height.TileCoordinate(flooredY, height);
-            int bumpedX = Height.TileCoordinate(flooredX + 1, width);
-            int bumpedY = Height.TileCoordinate(flooredY + 1, height);
+            flooredX = Height.TileCoordinate(flooredX, size);
+            flooredY = Height.TileCoordinate(flooredY, size);
+            int bumpedX = Height.TileCoordinate(flooredX + 1, size);
+            int bumpedY = Height.TileCoordinate(flooredY + 1, size);
 
             // Weights are reverse-linear interpolated based on u and v.
             float[,] weights = new float[2, 2];
@@ -83,15 +82,14 @@ namespace StoneAge {
             layers[bumpedX, bumpedY, (int) LayerName.Sediment] += weights[1, 1] * amount;
         }
 
-        public static int ErosionEvent(ref float[,,] layers) {
-            return ErosionEvent(ref layers, new ErosionParameters());
+        public static int ErosionEvent(ref float[,,] layers, ref float[,] visits) {
+            return ErosionEvent(ref layers, new ErosionParameters(), ref visits);
         }
 
-        public static int ErosionEvent(ref float[,,] layers, ErosionParameters parameters) {
-            int width = layers.GetLength(1);
-            int height = layers.GetLength(0);
+        public static int ErosionEvent(ref float[,,] layers, ErosionParameters parameters, ref float[,] visits) {
+            int size = layers.GetLength(0);
 
-            Vector2 startPos = new Vector2(Random.Range(0, width), Random.Range(0, height));
+            Vector2 startPos = new Vector2(Random.Range(0, size), Random.Range(0, size));
             Vector2 startDir = Height.GetInterpolatedGradient(startPos, layers);
 
             DropParticle drop = new DropParticle(startPos, startDir);
@@ -122,6 +120,9 @@ namespace StoneAge {
                 float oldHeight = Height.GetInterpolatedHeight(drop.position, layers);
                 Vector2 oldPosition = drop.position;
                 drop.position = oldPosition + drop.direction;
+                int tiledX = Height.TileCoordinate((int) drop.position.x, visits.GetLength(0));
+                int tiledY = Height.TileCoordinate((int) drop.position.y, visits.GetLength(0));
+                visits[tiledX, tiledY] += 1;
                 float newHeight = Height.GetInterpolatedHeight(drop.position, layers);
                 float heightDifference = newHeight - oldHeight;
 
@@ -156,8 +157,7 @@ namespace StoneAge {
         }
 
         private static float PickUpSediment(Vector2 position, ref float[,,] layers, float radius, float amount, float[] erosionFactors) {
-            int width = layers.GetLength(1);
-            int height = layers.GetLength(0);
+            int size = layers.GetLength(0);
 
             int flooredX = Mathf.FloorToInt(position.x);
             int flooredY = Mathf.FloorToInt(position.y);
@@ -178,16 +178,16 @@ namespace StoneAge {
             float normalizationFactor = 1 / weightSum;
 
             // Tile the whole coordinates.
-            flooredX = Height.TileCoordinate(flooredX, width);
-            flooredY = Height.TileCoordinate(flooredY, height);
+            flooredX = Height.TileCoordinate(flooredX, size);
+            flooredY = Height.TileCoordinate(flooredY, size);
 
             float totalRemoved = 0.0f;
             // Second pass removes sediment.
             int numLayers = System.Enum.GetValues(typeof(LayerName)).Length;
             for (int y = flooredY - flooredRadius; y <= flooredY + flooredRadius + 1; ++y) {
-                int tiledY = Height.TileCoordinate(y, height);
+                int tiledY = Height.TileCoordinate(y, size);
                 for (int x = flooredX - flooredRadius; x <= flooredX + flooredRadius + 1; ++x) {
-                    int tiledX = Height.TileCoordinate(x, width);
+                    int tiledX = Height.TileCoordinate(x, size);
                     float removedHeight = Mathf.Max(0.0f, rawWeights[x - flooredX + flooredRadius, y - flooredY + flooredRadius] * normalizationFactor * amount);
                     for (int i = 0; i < numLayers; ++i) {
                         float removedHeightLayer = removedHeight * erosionFactors[i];
