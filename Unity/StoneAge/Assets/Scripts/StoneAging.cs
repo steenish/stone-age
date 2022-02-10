@@ -22,15 +22,19 @@ namespace StoneAge {
         [SerializeField]
         Texture2D heightMap = null;
 
+        [Header("Shaders")]
+        [SerializeField]
+        private ComputeShader erosion;
+
         [Header("General parameters")]
-        [SerializeField]
-        private int numSteps;
-        [SerializeField]
-        private int effectiveMaxSteps = 1000;
         [SerializeField]
         private int seed;
 
         [Header("Erosion parameters")]
+        [SerializeField]
+        private int erosionSteps = 100;
+        [SerializeField]
+        private int effectiveMaxSteps = 1000;
         [SerializeField]
         [Range(0.0f, 1.0f)]
         private float rainRate = 1.0f;
@@ -56,6 +60,16 @@ namespace StoneAge {
         [SerializeField]
         private bool saveDebugTextures = false;
 
+        struct Int2 {
+            readonly int x;
+            readonly int y;
+
+            public Int2(int x, int y) {
+                this.x = x;
+                this.y = y;
+            }
+        }
+
         public void PerformAging() {
             if (albedoMap == null) {
                 Debug.LogError("No albedo map supplied.");
@@ -72,14 +86,17 @@ namespace StoneAge {
                 return;
             }
 
-            float totalWork = this.numSteps + 3 + (saveToDisk ? 1 : 0);
+            float totalWork = 5 + (saveToDisk ? 1 : 0);
             float completeWork = 0;
-            int size = heightMap.width;
 
-            Debug.Log("Initializing...");
-            EditorUtility.DisplayProgressBar("Aging", "Initializing", completeWork++ / totalWork);
+            Debug.Log("Initializing.");
+            if (EditorUtility.DisplayCancelableProgressBar("Aging", "Initializing", completeWork++ / totalWork)) {
+                EditorUtility.ClearProgressBar();
+                return;
+			}
             System.DateTime initializationStart = System.DateTime.Now;
 
+            int size = heightMap.width;
             Random.InitState(seed);
 
             if (!customErosionParameters) {
@@ -87,75 +104,139 @@ namespace StoneAge {
             }
 
             // Create buffers from the input textures.
-            Color[,] albedoBuffer = Conversion.CreateColorBuffer(albedoMap);
-            float[,] heightBuffer = Conversion.CreateFloatBuffer(heightMap);
+            Color[,] albedoBuffer = Conversion.Create2DColorBuffer(albedoMap);
+            float[] heightBuffer = Conversion.CreateFloatBuffer(heightMap);
 
-            LogTime("Initialization done", initializationStart);
+			// Set up erosion compute shader parameters.
+			ComputeBuffer heightComputeBuffer = new ComputeBuffer(size * size, sizeof(float));
+			heightComputeBuffer.SetData(heightBuffer);
+			erosion.SetBuffer(0, "heightBuffer", heightComputeBuffer);
 
-            // Perform the aging.
-            Debug.Log("Aging...");
-            EditorUtility.DisplayProgressBar("Aging", "Aging", completeWork++ / totalWork);
+			// Calculate and set weights and offsets for erosion.
+			int radius = erosionParameters.radius;
+			List<Int2> erosionIndexOffsets = new List<Int2>();
+			List<float> weights = new List<float>();
+			float weightSum = 0;
+			for (int y = -radius; y <= radius; y++) {
+				for (int x = -radius; x <= radius; x++) {
+					float sqrDst = x * x + y * y;
+					if (sqrDst < radius * radius) {
+						erosionIndexOffsets.Add(new Int2(x, y));
+						float weight = 1 - Mathf.Sqrt(sqrDst) / radius;
+						weightSum += weight;
+						weights.Add(weight);
+					}
+				}
+			}
+			for (int i = 0; i < weights.Count; i++) {
+				weights[i] /= weightSum;
+			}
 
-            System.DateTime simulationStart = System.DateTime.Now;
-            int rainDays = Mathf.FloorToInt(365.25f * rainRate);
+			ComputeBuffer indexOffsetBuffer = new ComputeBuffer(erosionIndexOffsets.Count, sizeof(int) * 2);
+			ComputeBuffer weightBuffer = new ComputeBuffer(weights.Count, sizeof(float));
+			indexOffsetBuffer.SetData(erosionIndexOffsets);
+			weightBuffer.SetData(weights);
+			erosion.SetBuffer(0, "erosionOffsets", indexOffsetBuffer);
+			erosion.SetBuffer(0, "erosionWeights", weightBuffer);
 
-            List<int> numSteps = new List<int>();
+			// Generate random positions (indices) for raindrop placement.
+			int[] randomIndices = new int[erosionSteps];
+			for (int i = 0; i < erosionSteps; i++) {
+				int randomX = Random.Range(0, size);
+				int randomY = Random.Range(0, size);
+				randomIndices[i] = randomX + randomY * size;
+			}
 
-            for (int step = 0; step < this.numSteps; ++step) {
-                System.DateTime stepStart = System.DateTime.Now;
+			ComputeBuffer rainPositionIndexBuffer = new ComputeBuffer(randomIndices.Length, sizeof(int));
+			rainPositionIndexBuffer.SetData(randomIndices);
+			erosion.SetBuffer(0, "rainPositionIndices", rainPositionIndexBuffer);
 
-                // Perform rain erosion.
-                for (int rainDay = 0; rainDay < rainDays; ++rainDay) {
-                    if (customErosionParameters) {
-                        numSteps.Add(Erosion.ErosionEvent(ref heightBuffer, erosionParameters));
-                    } else {
-                        numSteps.Add(Erosion.ErosionEvent(ref heightBuffer));
-                    }
-                }
+			erosion.SetFloat("inertia", erosionParameters.inertia);
+			erosion.SetFloat("capacity", erosionParameters.capacity);
+			erosion.SetFloat("deposition", erosionParameters.deposition);
+			erosion.SetFloat("erosion", erosionParameters.erosion);
+			erosion.SetFloat("evaporation", erosionParameters.evaporation);
+			erosion.SetFloat("radius", erosionParameters.radius);
+			erosion.SetFloat("minSlope", erosionParameters.minSlope);
+			erosion.SetInt("maxPath", erosionParameters.maxPath);
+			erosion.SetFloat("gravity", erosionParameters.gravity);
+			erosion.SetFloat("startSpeed", erosionParameters.startSpeed);
+			erosion.SetFloat("startWater", erosionParameters.startWater);
 
-                EditorUtility.DisplayProgressBar("Aging", "Aged step " + (step + 1) + " / " + this.numSteps, completeWork++ / totalWork);
+			erosion.SetInt("size", size);
+			erosion.SetInt("numWeights", weights.Count);
 
-                LogTime("Aged " + (step + 1) + " step" + ((step + 1 == 1) ? "" : "s"), stepStart);
-            }
+			LogTime("Initialization done", initializationStart);
 
-            LogTime("Aging done", simulationStart);
+			// Perform the aging.
+			Debug.Log("Aging.");
+			if (EditorUtility.DisplayCancelableProgressBar("Aging", "Aging", completeWork++ / totalWork)) {
+				EditorUtility.ClearProgressBar();
+				return;
+			}
+			System.DateTime simulationStart = System.DateTime.Now;
 
-            if (loggingLevel >= LoggingLevel.Debug) {
-                int totalSteps = numSteps.Sum();
-                int averageSteps = totalSteps / numSteps.Count;
-                int numMaxSteps = numSteps.FindAll(e => e >= erosionParameters.maxPath-1).Count;
-                int maxStep = numSteps.Max();
-                int minStep = numSteps.Min();
-                Debug.Log("min steps: " + minStep + ", max steps: " + maxStep + ", average steps: " + averageSteps + ", times maxStep parameter reached: " + numMaxSteps + " / " + numSteps.Count + " = " + ( numMaxSteps / numSteps.Count));
-            }
+			Debug.Log("Eroding.");
+			if (EditorUtility.DisplayCancelableProgressBar("Aging", "Eroding", completeWork++ / totalWork)) {
+				EditorUtility.ClearProgressBar();
+				return;
+			}
+			System.DateTime erosionStart = System.DateTime.Now;
 
-            Debug.Log("Finalizing...");
-            EditorUtility.DisplayProgressBar("Aging", "Finalizing", completeWork++ / totalWork);
-            System.DateTime finalizationStart = System.DateTime.Now;
+			// Perform hydraulic erosion.
+			erosion.Dispatch(0, erosionSteps / 1024, 1, 1);
+			heightComputeBuffer.GetData(heightBuffer);
 
-            // TODO do this with shaders instead probably
-            //float[,] rockErosion = Conversion.DifferenceMap(originalRockHeight, Conversion.ExtractBufferLayer(heightBuffer, (int) Erosion.LayerName.Rock));
-            Height.NormalizeHeight(ref heightBuffer); // TODO this could be done with a shader once the max and min heights have been found
+			LogTime("Erosion done", erosionStart);
 
-            // TODO do this with shaders instead probably
-            //Textures.ColorErodedAreas(ref albedoBuffer, Textures.GaussianBlur(rockErosion, blurRadius), this.numSteps, effectiveMaxSteps);
+			//for (int step = 0; step < this.erosionSteps; ++step) {
+			//    System.DateTime stepStart = System.DateTime.Now;
 
-            // TODO do this with shaders instead probably
-            //float[,] sedimentBuffer = Conversion.ExtractBufferLayer(heightBuffer, (int) Erosion.LayerName.Sediment);
-            //Height.NormalizeHeight(ref sedimentBuffer);
-            //albedoBuffer = Textures.OverlaySediment(albedoBuffer, sedimentBuffer, sedimentColor, sedimentOpacityModifier);
+			//    EditorUtility.DisplayProgressBar("Aging", "Aged step " + (step + 1) + " / " + this.erosionSteps, completeWork++ / totalWork);
 
-            LogTime("Finalization done", finalizationStart);
+			//    LogTime("Aged " + (step + 1) + " step" + ((step + 1 == 1) ? "" : "s"), stepStart);
+			//}
+
+			LogTime("Aging done", simulationStart);
+
+			Debug.Log("Finalizing.");
+			if (EditorUtility.DisplayCancelableProgressBar("Aging", "Finalizing", completeWork++ / totalWork)) {
+				EditorUtility.ClearProgressBar();
+				return;
+			}
+			System.DateTime finalizationStart = System.DateTime.Now;
+
+			heightComputeBuffer.Release();
+			indexOffsetBuffer.Release();
+			weightBuffer.Release();
+			rainPositionIndexBuffer.Release();
+
+			// TODO do this with shaders instead probably
+			//float[,] rockErosion = Conversion.DifferenceMap(originalRockHeight, Conversion.ExtractBufferLayer(heightBuffer, (int) Erosion.LayerName.Rock));
+			Height.NormalizeHeight(ref heightBuffer); // TODO this could be done with a shader once the max and min heights have been found
+
+			// TODO do this with shaders instead probably
+			//Textures.ColorErodedAreas(ref albedoBuffer, Textures.GaussianBlur(rockErosion, blurRadius), this.numSteps, effectiveMaxSteps);
+
+			// TODO do this with shaders instead probably
+			//float[,] sedimentBuffer = Conversion.ExtractBufferLayer(heightBuffer, (int) Erosion.LayerName.Sediment);
+			//Height.NormalizeHeight(ref sedimentBuffer);
+			//albedoBuffer = Textures.OverlaySediment(albedoBuffer, sedimentBuffer, sedimentColor, sedimentOpacityModifier);
+
+			//LogTime("Finalization done", finalizationStart);
 
             if (saveToDisk) {
-                Debug.Log("Saving...");
-                EditorUtility.DisplayProgressBar("Aging", "Saving", completeWork++ / totalWork);
+                Debug.Log("Saving.");
+                if (EditorUtility.DisplayCancelableProgressBar("Aging", "Saving", completeWork++ / totalWork)) {
+                    EditorUtility.ClearProgressBar();
+                    return;
+                }
                 System.DateTime savingStart = System.DateTime.Now;
 
                 string savePath = System.Environment.GetFolderPath(saveLocation) + "/" + folderName + "/";
                 System.IO.Directory.CreateDirectory(savePath);
-                Textures.SaveTextureAsPNG(Conversion.CreateTexture(albedoMap.width, albedoBuffer), savePath + "Albedo_Aged_" + this.numSteps + ".png");
-                Textures.SaveTextureAsPNG(Conversion.CreateTexture(heightMap.width, heightBuffer), savePath + "Height_Aged_" + this.numSteps + ".png");
+                Textures.SaveTextureAsPNG(Conversion.CreateTexture(albedoMap.width, albedoBuffer), savePath + "Albedo_Aged_" + this.erosionSteps + ".png");
+                Textures.SaveTextureAsPNG(Conversion.CreateTexture(heightMap.width, heightBuffer), savePath + "Height_Aged_" + this.erosionSteps + ".png");
 
                 // TODO re-implement once the buffers are calculated again
                 //if (saveDebugTextures) {

@@ -1,0 +1,175 @@
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CSMain
+
+// Buffers
+RWStructuredBuffer<float> heightBuffer;
+StructuredBuffer<uint> rainPositionIndices;
+StructuredBuffer<int2> erosionOffsets;
+StructuredBuffer<float> erosionWeights;
+
+// Erosion parameters
+float inertia;
+float capacity;
+float deposition;
+float erosion;
+float evaporation;
+uint radius;
+float minSlope;
+uint maxPath;
+float gravity;
+float startSpeed;
+float startWater;
+
+// Other information
+uint size;
+uint numWeights;
+
+struct Drop
+{
+    float2 position;
+    float2 direction;
+    float speed;
+    float water;
+    float sediment;
+};
+
+// TODO COMMENTS EVERYWHERE
+
+int TileCoordinate(int coordinate, uint bound)
+{
+    int tiledCoordinate = coordinate;
+    
+    if(tiledCoordinate < 0)
+    {
+        tiledCoordinate += bound * (1 + (abs(coordinate) / bound));
+    }
+    
+    if(tiledCoordinate >= bound)
+    {
+        tiledCoordinate %= bound;
+    }
+    
+    return tiledCoordinate;
+}
+
+float3 GetGradientAndHeight(float2 position)
+{
+    int x = (int) position.x;
+    int y = (int) position.y;
+    float u = frac(position.x);
+    float v = frac(position.y);
+
+    x = TileCoordinate(x, size);
+    y = TileCoordinate(y, size);
+    uint bumpedX = (x + 1) % size;
+    uint bumpedY = (y + 1) % size;
+    
+    float Pxy = heightBuffer[x + y * size];
+    float Px1y = heightBuffer[bumpedX + y * size];
+    float Pxy1 = heightBuffer[x + bumpedY * size];
+    float Px1y1 = heightBuffer[bumpedX + bumpedY * size];
+    
+    float height = (Pxy * (1 - u) + Px1y * u) * (1 - v) + (Pxy1 * (1 - u) + Px1y1 * u) * v;
+    float gradX = (Px1y - Pxy) * (1 - v) + (Px1y1 - Pxy1) * v;
+    float gradY = (Pxy1 - Pxy) * (1 - u) + (Px1y1 - Px1y) * u;
+    
+    return float3(gradX, gradY, height);
+}
+
+void DepositSediment(float2 position, float amount)
+{
+    int x = (int) position.x;
+    int y = (int) position.y;
+    float u = frac(position.x);
+    float v = frac(position.y);
+
+    x = TileCoordinate(x, size);
+    y = TileCoordinate(y, size);
+    int bumpedX = TileCoordinate(x + 1, size);
+    int bumpedY = TileCoordinate(y + 1, size);
+
+    heightBuffer[x + y * size] += (1 - v) * (1 - u) * amount;
+    heightBuffer[bumpedX + y * size] += (1 - v) * u * amount;
+    heightBuffer[x + bumpedY * size] += v * (1 - u) * amount;
+    heightBuffer[bumpedX + bumpedY * size] += v * u * amount;
+}
+
+float PickUpSediment(float2 position, int positionIndex, float amount)
+{
+    float totalSediment = 0;
+    
+    for(int i = 0; i < radius; ++i)
+    {
+        int x = (int) position.x;
+        int y = (int) position.y;
+        int offsetX = x + erosionOffsets[i].x;
+        int offsetY = y + erosionOffsets[i].y;
+        int tiledX = TileCoordinate(offsetX, size);
+        int tiledY = TileCoordinate(offsetY, size);
+        int tiledHeightIndex = tiledX + tiledY * size;
+        
+        float weightedAmount = amount * erosionWeights[i];
+        float sedimentDiff = (heightBuffer[tiledHeightIndex] < weightedAmount) ? heightBuffer[tiledHeightIndex] : weightedAmount;
+        heightBuffer[tiledHeightIndex] -= sedimentDiff;
+        totalSediment += sedimentDiff;
+    }
+
+    return totalSediment;
+}
+
+[numthreads(1024, 1, 1)]
+void CSMain(uint3 id : SV_DispatchThreadID)
+{
+    uint positionIndex = rainPositionIndices[id.x];
+    
+    Drop drop;
+    drop.position = float2(positionIndex % size, positionIndex / size);
+    drop.direction = GetGradientAndHeight(drop.position).xy;
+    drop.speed = startSpeed;
+    drop.water = startWater;
+    drop.sediment = 0.0;
+    
+    for(int step = 0; step < maxPath; ++step)
+    {
+        if(drop.water <= 0)
+        {
+            break;
+        }
+        
+        float3 oldGradientAndHeight = GetGradientAndHeight(drop.position);
+        float2 newDir = drop.direction * inertia - oldGradientAndHeight.xy * (1 - inertia);
+        drop.direction = normalize(newDir); // TODO NOTE THAT NO MININUM SLOPE IS TAKEN INTO ACCOUNT HERE
+        
+        float2 oldPosition = drop.position;
+        int oldPositionIndex = (int) drop.position.x + (int) drop.position.y * size;
+        drop.position += drop.direction;
+        float3 newGradientAndHeight = GetGradientAndHeight(drop.position);
+        float heightDifference = newGradientAndHeight.z - oldGradientAndHeight.z;
+
+        if(heightDifference > 0.0)
+        {
+            float amount = max(heightDifference, drop.sediment);
+            drop.sediment = max(0, drop.sediment - amount);
+            DepositSediment(oldPosition, amount);
+        }
+        else
+        {
+            float newCapacity = max(-heightDifference, minSlope) * drop.speed * drop.water * capacity;
+            
+            if(drop.sediment >= newCapacity)
+            {
+                float amount = (drop.sediment - newCapacity) * deposition;
+                drop.sediment = max(0, drop.sediment - amount);
+                DepositSediment(oldPosition, amount);
+            }
+            else
+            {
+                float amount = min((newCapacity - drop.sediment) * erosion, -heightDifference);
+                drop.sediment += PickUpSediment(oldPosition, oldPositionIndex, amount);
+            }
+        }
+        
+        drop.speed = sqrt(drop.speed * drop.speed + heightDifference * gravity);
+        drop.water *= 1 - evaporation;
+    }
+}

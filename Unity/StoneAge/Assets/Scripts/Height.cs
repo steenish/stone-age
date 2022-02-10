@@ -40,25 +40,21 @@ namespace Utility {
             return interpolationFunction(Pxy, Px1y, Pxy1, Px1y1, u, v);
         }
 
-        public static void NormalizeHeight(ref float[,] heightBuffer) {
+        public static void NormalizeHeight(ref float[] heightBuffer) {
             int size = heightBuffer.GetLength(0);
 
             // Find min and max height.
             float minHeight = float.MaxValue;
             float maxHeight = -float.MaxValue;
-            for (int x = 0; x < size; ++x) {
-                for (int y = 0; y < size; ++y) {
-                    if (heightBuffer[x, y] < minHeight) minHeight = heightBuffer[x, y];
-                    if (heightBuffer[x, y] > maxHeight) maxHeight = heightBuffer[x, y];
-                }
+            for (int i = 0; i < size * size; ++i) {
+                if (heightBuffer[i] < minHeight) minHeight = heightBuffer[i];
+                if (heightBuffer[i] > maxHeight) maxHeight = heightBuffer[i];
             }
 
             // Normalize into 0 - 1 range.
             float normalizingDenominator = 1 / (maxHeight - minHeight + Mathf.Epsilon);
-            for (int x = 0; x < size; ++x) {
-                for (int y = 0; y < size; ++y) {
-                    heightBuffer[x, y] = (heightBuffer[x, y] - minHeight) * normalizingDenominator;
-                }
+            for (int i = 0; i < size * size; ++i) {
+                heightBuffer[i] = (heightBuffer[i] - minHeight) * normalizingDenominator;
             }
         }
 

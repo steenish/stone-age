@@ -29,12 +29,14 @@ namespace StoneAge {
             public float deposition;
             public float erosion;
             public float evaporation;
-            public float radius;
+            public int radius;
             public float minSlope;
             public int maxPath;
             public float gravity;
+            public float startSpeed;
+            public float startWater;
 
-            public ErosionParameters(float inertia = 0.1f, float capacity = 8.0f, float deposition = 0.1f, float erosion = 0.9f, float evaporation = 0.05f, float radius = 4.0f, float minSlope = 0.01f, int maxPath = 1000, float gravity = 1.0f) {
+            public ErosionParameters(float inertia = 0.1f, float capacity = 8.0f, float deposition = 0.1f, float erosion = 0.9f, float evaporation = 0.05f, int radius = 4, float minSlope = 0.01f, int maxPath = 30, float gravity = 1.0f, float startSpeed = 0.0f, float startWater = 1.0f) {
                 this.inertia = inertia;
                 this.capacity = capacity;
                 this.deposition = deposition;
@@ -44,6 +46,8 @@ namespace StoneAge {
                 this.minSlope = minSlope;
                 this.maxPath = maxPath;
                 this.gravity = gravity;
+                this.startSpeed = startSpeed;
+                this.startWater = startWater;
             }
         }
 
@@ -75,11 +79,11 @@ namespace StoneAge {
             heightBuffer[bumpedX, bumpedY] += weights[1, 1] * amount;
         }
 
-        public static int ErosionEvent(ref float[,] heightBuffer) {
-            return ErosionEvent(ref heightBuffer, new ErosionParameters());
+        public static void ErosionEvent(ref float[,] heightBuffer) {
+            ErosionEvent(ref heightBuffer, new ErosionParameters());
         }
 
-        public static int ErosionEvent(ref float[,] heightBuffer, ErosionParameters parameters) {
+        public static void ErosionEvent(ref float[,] heightBuffer, ErosionParameters parameters) {
             int size = heightBuffer.GetLength(0);
 
             Vector2 startPos = new Vector2(Random.Range(0, size), Random.Range(0, size));
@@ -87,17 +91,10 @@ namespace StoneAge {
 
             DropParticle drop = new DropParticle(startPos, startDir);
 
-            int numSteps = 0;
-
             for (int step = 0; step < parameters.maxPath; ++step) {
                 // Check breaking conditions.
                 if (drop.water <= 0) {
-                    numSteps = step;
                     break;
-                }
-
-                if (step == parameters.maxPath - 1) {
-                    numSteps = step;
                 }
 
                 // Update position and direction.
@@ -143,8 +140,6 @@ namespace StoneAge {
                 drop.water *= 1 - parameters.evaporation;
                 drop.water -= Mathf.Epsilon;
             }
-
-            return numSteps;
         }
 
         private static void PickUpSediment(Vector2 position, ref float[,] heightBuffer, float radius, float amount) {
