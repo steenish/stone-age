@@ -29,14 +29,23 @@ namespace StoneAge {
 
         [System.Serializable]
         public class ErosionParameters {
-            public float inertia;
-            public float capacity;
-            public float deposition;
-            public float erosion;
-            public float evaporation;
-            public float radius;
-            public float minSlope;
+            [Range(1, 1000)]
             public int maxPath;
+            [Range(0.01f, 0.5f)]
+            public float inertia;
+            [Range(1.0f, 20.0f)]
+            public float capacity;
+            [Range(0.1f, 2.0f)]
+            public float deposition;
+            [Range(0.1f, 2.0f)]
+            public float erosion;
+            [Range(0.05f, 2.0f)]
+            public float evaporation;
+            [Range(1.0f, 10.0f)]
+            public float radius;
+            [Range(0.01f, 2.0f)]
+            public float minSlope;
+            [Range(0.1f, 2.0f)]
             public float gravity;
             public float[] erosionFactors;
 

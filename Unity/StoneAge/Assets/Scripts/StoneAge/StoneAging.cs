@@ -30,7 +30,7 @@ namespace StoneAge {
         [SerializeField]
         private int seed;
 
-        [Header("Erosion parameters")]
+        [Header("Erosion settings")]
         [SerializeField]
         [Range(0.0f, 1.0f)]
         private float rainRate = 1.0f;
@@ -140,6 +140,9 @@ namespace StoneAge {
             Random.InitState(seed);
 
             int size = albedoMap.width;
+            float[,] sedimentNoise = Textures.PerlinNoise(size, colorationParameters.noiseScale);
+            float[,] ironNoise = Textures.PerlinNoise(size, colorationParameters.noiseScale);
+            float[,] efflorescenceNoise = Textures.PerlinNoise(size, colorationParameters.noiseScale);
 
             // Create buffers from the input textures.
             Color[,] albedoBuffer = null;
@@ -203,17 +206,14 @@ namespace StoneAge {
 
             float[,] heightBuffer = Height.FinalizeHeight(ref layers);
 
-            float[,] ironNoise = Textures.PerlinNoise(size, colorationParameters.noiseScale);
             Coloration.SurfaceSolutionDiscoloration(ref albedoBuffer, ironNoise, colorationParameters.ironGranularity, colorationParameters.ironColor, colorationParameters.ironOpacityModifier, agingYears, effectiveMaxAge, true);
 
-            float[,] efflorescenceNoise = Textures.PerlinNoise(size, colorationParameters.noiseScale);
             Coloration.SurfaceSolutionDiscoloration(ref albedoBuffer, efflorescenceNoise, colorationParameters.efflorescenceGranularity, colorationParameters.efflorescenceColor, colorationParameters.efflorescenceOpacityModifier, agingYears, effectiveMaxAge);
 
             Coloration.ColorErodedAreas(ref albedoBuffer, Textures.GaussianBlur(erosionBuffer, colorationParameters.blurRadius), colorationParameters.erosionDarkening, agingYears, effectiveMaxAge);
 
             float[,] sedimentBuffer = Conversion.ExtractBufferLayer(layers, (int) Erosion.LayerName.Sediment);
             Height.NormalizeHeight(ref sedimentBuffer);
-            float[,] sedimentNoise = Textures.PerlinNoise(size, colorationParameters.noiseScale);
             Coloration.OverlaySediment(ref albedoBuffer, sedimentBuffer, colorationParameters.sedimentColor, colorationParameters.sedimentOpacityModifier, sedimentNoise);
 
 
