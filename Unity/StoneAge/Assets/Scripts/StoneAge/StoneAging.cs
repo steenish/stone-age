@@ -35,9 +35,13 @@ namespace StoneAge {
         [Range(0.0f, 1.0f)]
         private float rainRate = 1.0f;
         [SerializeField]
-        private ColorationParameters colorationParameters;
+        private Coloration.ColorationParameters colorationParameters;
         [SerializeField]
         private Erosion.ErosionParameters erosionParameters;
+
+        [Header("Lichen settings")]
+        [SerializeField]
+        private LichenGrowth.LichenParameters lichenParameters;
 
         [Header("Export settings")]
         [SerializeField]
@@ -48,59 +52,6 @@ namespace StoneAge {
         private string folderName = "StoneAge";
         [SerializeField]
         private bool saveDebugTextures = false;
-
-        [System.Serializable]
-        public class ColorationParameters {
-            [Range(1, 4)]
-            public int blurRadius;
-            [Range(0.0f, 2.0f)]
-            public float erosionDarkening;
-            [Range(1.0f, 20.0f)]
-            public float noiseScale;
-            public Gradient sedimentColor;
-            [Range(0.0f, 2.0f)]
-            public float sedimentOpacityModifier;
-            public Color ironColor;
-            [Range(0.0f, 2.0f)]
-            public float ironOpacityModifier;
-            [Range(50, 300)]
-            public float ironGranularity;
-            public Color efflorescenceColor;
-            [Range(0.0f, 2.0f)]
-            public float efflorescenceOpacityModifier;
-            [Range(50, 300)]
-            public float efflorescenceGranularity;
-            public ColorationParameters(Gradient sedimentColor, Color ironColor, Color efflorescenceColor, int blurRadius = 2, float erosionDarkening = 0.4f, float noiseScale = 5.0f, float sedimentOpacityModifier = 2.0f, float ironOpacityModifier = 0.6f, float ironGranularity = 200, float efflorescenceOpacityModifier = 0.6f, float efflorescenceGranularity = 200) {
-                this.blurRadius = blurRadius;
-                this.erosionDarkening = erosionDarkening;
-                this.noiseScale = noiseScale;
-                if (sedimentColor == null) {
-                    sedimentColor = new Gradient();
-                    GradientColorKey[] keys = new GradientColorKey[] {
-                        new GradientColorKey(new Color(0.5607843f, 0.5764706f, 0.5803922f), 0.0f),
-                        new GradientColorKey(new Color(0.2745098f, 0.2941177f, 0.2901961f), 1.0f)
-                    };
-                    sedimentColor.colorKeys = keys;
-                } else {
-                    this.sedimentColor = sedimentColor;
-                }
-                this.sedimentOpacityModifier = sedimentOpacityModifier;
-                if (ironColor == null) {
-                    this.ironColor = new Color(1.0f, 0.5309945f, 0.0f);
-                } else {
-                    this.ironColor = ironColor;
-                }
-                this.ironOpacityModifier = ironOpacityModifier;
-                this.ironGranularity = ironGranularity;
-                if (efflorescenceColor == null) {
-                    this.efflorescenceColor = Color.white;
-                } else {
-                    this.efflorescenceColor = efflorescenceColor;
-                }
-                this.efflorescenceOpacityModifier = efflorescenceOpacityModifier;
-                this.efflorescenceGranularity = efflorescenceGranularity;
-            }
-        }
 
         public void StartAging() {
             try {
@@ -152,6 +103,11 @@ namespace StoneAge {
             float[,] originalRockHeight = Conversion.CreateFloatBuffer(heightMap);
             Conversion.FillBufferLayer(originalRockHeight, ref layers, (int) Erosion.LayerName.Rock);
 
+            List<LichenGrowth.Cluster> lichenClusters = new List<LichenGrowth.Cluster>();
+            for (int i = 0; i < lichenParameters.initialSeeds; ++i) {
+                lichenClusters.Add(new LichenGrowth.Cluster(new Vector2(Random.Range(0.0f, size), Random.Range(0.0f, size)), lichenParameters));
+            }
+
             LogTime("Initialization done", initializationStart);
 
             // Perform the aging.
@@ -162,7 +118,6 @@ namespace StoneAge {
             }
             
             System.DateTime simulationStart = System.DateTime.Now;
-            int rainDays = Mathf.FloorToInt(365.25f * rainRate);
 
             List<int> numSteps = new List<int>();
             float[,] visits = new float[size, size];
@@ -170,9 +125,18 @@ namespace StoneAge {
             for (int year = 0; year < agingYears; ++year) {
                 System.DateTime yearStart = System.DateTime.Now;
 
-                // Perform rain erosion.
-                for (int rainDay = 0; rainDay < rainDays; ++rainDay) {
-                    numSteps.Add(Erosion.ErosionEvent(ref layers, erosionParameters, ref visits));
+                // Simulate each day.
+                for (int day = 0; day < 365; ++day) {
+
+                    // Perform hydraulic (rain) erosion.
+                    if (Random.value < rainRate) {
+                        numSteps.Add(Erosion.ErosionEvent(ref layers, erosionParameters, ref visits));
+                    }
+
+                    // Perform lichen growth.
+                    for (int i = 0; i < lichenClusters.Count; ++i) {
+                        LichenGrowth.LichenGrowthEvent(lichenClusters, i, size, lichenParameters);
+                    }
                 }
 
                 if (EditorUtility.DisplayCancelableProgressBar("Aging", "Aged year " + (year + 1) + " / " + agingYears, completeWork++ / totalWork)) {
