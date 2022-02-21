@@ -30,37 +30,24 @@ namespace StoneAge {
         [System.Serializable]
         public class ErosionParameters {
             [Range(1, 1000)]
-            public int maxPath;
+            public int maxPath = 100;
             [Range(0.01f, 0.5f)]
-            public float inertia;
+            public float inertia = 0.1f;
             [Range(1.0f, 20.0f)]
-            public float capacity;
+            public float capacity = 8.0f;
             [Range(0.1f, 2.0f)]
-            public float deposition;
+            public float deposition = 0.1f;
             [Range(0.1f, 2.0f)]
-            public float erosion;
+            public float erosion = 0.9f;
             [Range(0.05f, 2.0f)]
-            public float evaporation;
+            public float evaporation = 0.05f ;
             [Range(1.0f, 10.0f)]
-            public float radius;
+            public float radius = 4.0f;
             [Range(0.01f, 2.0f)]
-            public float minSlope;
+            public float minSlope = 0.01f;
             [Range(0.1f, 2.0f)]
-            public float gravity;
-            public float[] erosionFactors;
-
-            public ErosionParameters(float inertia = 0.1f, float capacity = 8.0f, float deposition = 0.1f, float erosion = 0.9f, float evaporation = 0.05f, float radius = 4.0f, float minSlope = 0.01f, int maxPath = 30, float gravity = 1.0f, float sedimentErosionFactor = 0.9f, float rockErosionFactor = 0.5f) {
-                this.inertia = inertia;
-                this.capacity = capacity;
-                this.deposition = deposition;
-                this.erosion = erosion;
-                this.evaporation = evaporation;
-                this.radius = radius;
-                this.minSlope = minSlope;
-                this.maxPath = maxPath;
-                this.gravity = gravity;
-                erosionFactors = new float[] { sedimentErosionFactor, rockErosionFactor };
-            }
+            public float gravity = 1.0f;
+            public float[] erosionFactors; // 0.9f and 0.5f
         }
 
         private static void DepositSediment(Vector2 position, ref float[,,] layers, float amount) {

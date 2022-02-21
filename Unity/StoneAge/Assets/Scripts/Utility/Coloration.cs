@@ -1,5 +1,4 @@
 using UnityEngine;
-using UnityEngine.UI;
 
 namespace Utility {
     public class Coloration {
@@ -7,54 +6,24 @@ namespace Utility {
         [System.Serializable]
         public class ColorationParameters {
             [Range(1, 4)]
-            public int blurRadius;
+            public int blurRadius = 2;
             [Range(0.0f, 2.0f)]
-            public float erosionDarkening;
+            public float erosionDarkening = 0.4f;
             [Range(1.0f, 20.0f)]
-            public float noiseScale;
-            public Gradient sedimentColor;
+            public float noiseScale = 5.0f;
+            public Gradient sedimentColor; // 8F9394 to 464B4A
             [Range(0.0f, 2.0f)]
-            public float sedimentOpacityModifier;
-            public Color ironColor;
+            public float sedimentOpacityModifier = 2.0f;
+            public Color ironColor; // FF8700
             [Range(0.0f, 2.0f)]
-            public float ironOpacityModifier;
+            public float ironOpacityModifier = 0.6f;
             [Range(50, 300)]
-            public float ironGranularity;
-            public Color efflorescenceColor;
+            public float ironGranularity = 200.0f;
+            public Color efflorescenceColor; // FFFFFF
             [Range(0.0f, 2.0f)]
-            public float efflorescenceOpacityModifier;
+            public float efflorescenceOpacityModifier = 0.6f;
             [Range(50, 300)]
-            public float efflorescenceGranularity;
-            public ColorationParameters(Gradient sedimentColor, Color ironColor, Color efflorescenceColor, int blurRadius = 2, float erosionDarkening = 0.4f, float noiseScale = 5.0f, float sedimentOpacityModifier = 2.0f, float ironOpacityModifier = 0.6f, float ironGranularity = 200, float efflorescenceOpacityModifier = 0.6f, float efflorescenceGranularity = 200) {
-                this.blurRadius = blurRadius;
-                this.erosionDarkening = erosionDarkening;
-                this.noiseScale = noiseScale;
-                if (sedimentColor == null) {
-                    sedimentColor = new Gradient();
-                    GradientColorKey[] keys = new GradientColorKey[] {
-                        new GradientColorKey(new Color(0.5607843f, 0.5764706f, 0.5803922f), 0.0f),
-                        new GradientColorKey(new Color(0.2745098f, 0.2941177f, 0.2901961f), 1.0f)
-                    };
-                    sedimentColor.colorKeys = keys;
-                } else {
-                    this.sedimentColor = sedimentColor;
-                }
-                this.sedimentOpacityModifier = sedimentOpacityModifier;
-                if (ironColor == null) {
-                    this.ironColor = new Color(1.0f, 0.5309945f, 0.0f);
-                } else {
-                    this.ironColor = ironColor;
-                }
-                this.ironOpacityModifier = ironOpacityModifier;
-                this.ironGranularity = ironGranularity;
-                if (efflorescenceColor == null) {
-                    this.efflorescenceColor = Color.white;
-                } else {
-                    this.efflorescenceColor = efflorescenceColor;
-                }
-                this.efflorescenceOpacityModifier = efflorescenceOpacityModifier;
-                this.efflorescenceGranularity = efflorescenceGranularity;
-            }
+            public float efflorescenceGranularity = 300.0f;
         }
 
         public static Color BeersLaw(Color color, float alpha) {
