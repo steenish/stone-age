@@ -135,7 +135,7 @@ namespace StoneAge {
 
                     // Perform lichen growth.
                     for (int i = 0; i < lichenClusters.Count; ++i) {
-                        LichenGrowth.LichenGrowthEvent(lichenClusters, i, size, lichenParameters);
+                        LichenGrowth.LichenGrowthEvent(lichenClusters, i, size, lichenParameters, layers);
                     }
                 }
 
@@ -149,7 +149,7 @@ namespace StoneAge {
 
             LogTime("Aging done", simulationStart);
 
-            if (loggingLevel >= LoggingLevel.Debug) {
+            if (loggingLevel >= LoggingLevel.Debug && numSteps.Count > 0) {
                 int totalSteps = numSteps.Sum();
                 int averageSteps = totalSteps / numSteps.Count;
                 int numMaxSteps = numSteps.FindAll(e => e >= erosionParameters.maxPath-1).Count;
@@ -180,8 +180,9 @@ namespace StoneAge {
             Height.NormalizeHeight(ref sedimentBuffer);
             Coloration.OverlaySediment(ref albedoBuffer, sedimentBuffer, colorationParameters.sedimentColor, colorationParameters.sedimentOpacityModifier, sedimentNoise);
 
-
             Height.NormalizeHeight(ref visits);
+
+            float[,] lichenBuffer = LichenGrowth.CreateLichenBuffer(lichenClusters, size);
 
             LogTime("Finalization done", finalizationStart);
 
@@ -202,6 +203,7 @@ namespace StoneAge {
                     Textures.SaveTextureAsPNG(Conversion.CreateTexture(size, erosionBuffer), savePath + "Erosion_Buffer_" + agingYears + ".png");
                     Textures.SaveTextureAsPNG(Conversion.CreateTexture(size, sedimentBuffer), savePath + "Sediment_Buffer_" + agingYears + ".png");
                     Textures.SaveTextureAsPNG(Conversion.CreateTexture(size, visits), savePath + "Visit_Buffer_" + agingYears + ".png");
+                    Textures.SaveTextureAsPNG(Conversion.CreateTexture(size, lichenBuffer), savePath + "Lichen_Buffer_" + agingYears + ".png");
                 }
 
                 LogTime("Saving done", savingStart);
