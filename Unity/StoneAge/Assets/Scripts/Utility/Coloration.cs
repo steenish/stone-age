@@ -32,6 +32,10 @@ namespace Utility {
             return result;
         }
 
+        public static Color BlendColors(Color foreground, Color background) {
+            return foreground * foreground.a + background * (1 - foreground.a);
+        }
+
         public static Color BlendColors(Color foreground, Color background, float foregroundAlpha) {
             return foreground * foregroundAlpha + background * (1 - foregroundAlpha);
         }
@@ -48,6 +52,16 @@ namespace Utility {
                     saturation *= 1 - erosionAmount;
                     value *= Mathf.Lerp(lowerValueBound, 1.0f, 1 - erosionAmount);
                     color[x, y] = Color.HSVToRGB(hue, saturation, value);
+                }
+            }
+        }
+
+        public static void OverlayLichens(ref Color[,] albedo, Color[,] lichen) {
+            int size = albedo.GetLength(0);
+
+            for (int y = 0; y < size; ++y) {
+                for (int x = 0; x < size; ++x) {
+                    albedo[x, y] = BlendColors(lichen[x, y], albedo[x, y]);
                 }
             }
         }

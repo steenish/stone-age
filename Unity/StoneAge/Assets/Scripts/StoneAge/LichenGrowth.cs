@@ -10,6 +10,7 @@ namespace StoneAge {
             public LichenParticle source { get; private set; }
             public List<LichenParticle> particles { get; private set; }
             public Bounds bounds { get; private set; }
+            public Species species { get; private set; }
 
             public Cluster(Vector2 sourcePosition, LichenParameters parameters) {
                 source = new LichenParticle(sourcePosition, parameters.particleRadius);
@@ -17,6 +18,7 @@ namespace StoneAge {
                     source
                 };
                 bounds = new Bounds(source.position, Vector3.one * source.radius);
+                species = parameters.species[Random.Range(0, parameters.species.Length)];
             }
         }
 
@@ -44,6 +46,7 @@ namespace StoneAge {
             public float deathRadius = 10.0f;
             [Range(0.0f, 0.1f)]
             public float newSeedProbability = 0.001f;
+            public Species[] species;
             public AnimationCurve directLightSensitivity;
             public AnimationCurve indirectLightSensitivity;
             public AnimationCurve moistureSensitivity;
@@ -60,6 +63,15 @@ namespace StoneAge {
             }
         }
 
+        [System.Serializable]
+        public class Species {
+            public Gradient colorGradient;
+
+            public Species(Gradient colorGradient) {
+                this.colorGradient = colorGradient;
+            }
+        }
+
         private static float CalculateEnvironmentalInfluence(LichenParameters parameters, float height) {
             float direct = parameters.directLightSensitivity.Evaluate(Mathf.Clamp01(2 * height * height));
             float indirect = parameters.indirectLightSensitivity.Evaluate(Mathf.Clamp01(height));
@@ -71,14 +83,17 @@ namespace StoneAge {
             return Vector2.SqrMagnitude(position1 - position2) <= radius * radius;
         }
 
-        public static float[,] CreateLichenBuffer(List<Cluster> clusters, int size) {
-            float[,] result = new float[size, size];
+        public static Color[,] CreateLichenBuffer(List<Cluster> clusters, int size, int maxAge = 1000) {
+            Color[,] result = new Color[size, size];
+            float effectDenominator = (float) 1 / (maxAge * 365);
 
             for (int i = 0; i < clusters.Count; ++i) {
                 List<LichenParticle> particles = clusters[i].particles;
+                Gradient speciesColorGradient = clusters[i].species.colorGradient;
                 for (int j = 0; j < particles.Count; ++j) {
                     Vector2 position = particles[j].position;
-                    result[(int) position.x, (int) position.y] = 1.0f;
+                    Color particleColor = speciesColorGradient.Evaluate(particles[j].age * effectDenominator);
+                    result[(int) position.x, (int) position.y] = particleColor;
                 }
             }
 
