@@ -8,15 +8,25 @@ namespace StoneAge {
 
         [System.Serializable]
         public class LichenParameters {
+            [Range(0, 20)]
             public int initialSeeds = 5;
+            [Range(0.1f, 0.00001f)]
             public float alpha = 1e-4f;
+            [Range(0.1f, 10.0f)]
             public float sigma = 1.0f;
+            [Range(1.0f, 10.0f)]
             public float tau = 3.0f;
+            [Range(1.0f, 5.0f)]
             public float rho = 2.5f;
+            [Range(10, 200)]
             public int maxPath = 100;
+            [Range(0.1f, 5.0f)]
             public float particleRadius = 1.0f;
+            [Range(0.1f, 5.0f)]
             public float spawnEpsilon = 1.0f;
+            [Range(1.0f, 10.0f)]
             public float stepDistance = 5.0f;
+            [Range(1.0f, 30.0f)]
             public float deathRadius = 10.0f;
             public AnimationCurve directLightSensitivity;
             public AnimationCurve indirectLightSensitivity;
