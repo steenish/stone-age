@@ -6,11 +6,25 @@ using Utility;
 namespace StoneAge {
     public class LichenGrowth {
 
+        public class Cluster {
+            public LichenParticle source { get; private set; }
+            public List<LichenParticle> particles { get; private set; }
+            public Bounds bounds { get; private set; }
+
+            public Cluster(Vector2 sourcePosition, LichenParameters parameters) {
+                source = new LichenParticle(sourcePosition, parameters.particleRadius);
+                particles = new List<LichenParticle> {
+                    source
+                };
+                bounds = new Bounds(source.position, Vector3.one * source.radius);
+            }
+        }
+
         [System.Serializable]
         public class LichenParameters {
             [Range(0, 20)]
             public int initialSeeds = 5;
-            [Range(0.1f, 0.00001f)]
+            [Range(0.00001f, 0.1f)]
             public float alpha = 1e-4f;
             [Range(0.1f, 10.0f)]
             public float sigma = 1.0f;
@@ -28,23 +42,11 @@ namespace StoneAge {
             public float stepDistance = 5.0f;
             [Range(1.0f, 30.0f)]
             public float deathRadius = 10.0f;
+            [Range(0.0f, 0.1f)]
+            public float newSeedProbability = 0.001f;
             public AnimationCurve directLightSensitivity;
             public AnimationCurve indirectLightSensitivity;
             public AnimationCurve moistureSensitivity;
-        }
-
-        public class Cluster {
-            public LichenParticle source { get; private set; }
-            public List<LichenParticle> particles { get; private set; }
-            public Bounds bounds { get; private set; }
-
-            public Cluster(Vector2 sourcePosition, LichenParameters parameters) {
-                source = new LichenParticle(sourcePosition, parameters.particleRadius);
-                particles = new List<LichenParticle> {
-                    source
-                };
-                bounds = new Bounds(source.position, Vector3.one * source.radius);
-            }
         }
 
         public class LichenParticle {
@@ -56,6 +58,106 @@ namespace StoneAge {
                 this.position = position;
                 this.radius = radius;
             }
+        }
+
+        private static float CalculateEnvironmentalInfluence(LichenParameters parameters, float height) {
+            float direct = parameters.directLightSensitivity.Evaluate(Mathf.Clamp01(2 * height * height));
+            float indirect = parameters.indirectLightSensitivity.Evaluate(Mathf.Clamp01(height));
+            float moisture = parameters.moistureSensitivity.Evaluate(Mathf.Clamp01(1 - height));
+            return Mathf.Min(direct, Mathf.Min(indirect, moisture));
+        }
+
+        private static bool CheckCollision(Vector2 position1, Vector2 position2, float radius) {
+            return Vector2.SqrMagnitude(position1 - position2) <= radius * radius;
+        }
+
+        public static float[,] CreateLichenBuffer(List<Cluster> clusters, int size) {
+            float[,] result = new float[size, size];
+
+            for (int i = 0; i < clusters.Count; ++i) {
+                List<LichenParticle> particles = clusters[i].particles;
+                for (int j = 0; j < particles.Count; ++j) {
+                    Vector2 position = particles[j].position;
+                    result[(int) position.x, (int) position.y] = 1.0f;
+                }
+            }
+
+            return result;
+        }
+
+        private static int FindNeighbors(List<LichenParticle> particles, LichenParticle particle, float radius) {
+            int numNeighbors = 0;
+
+            for (int i = 0; i < particles.Count; ++i) {
+                LichenParticle otherParticle = particles[i];
+                if (particle != otherParticle && Vector2.Distance(particle.position, otherParticle.position) <= radius) {
+                    numNeighbors++;
+                }
+            }
+
+            return numNeighbors;
+        }
+
+        private static Vector2 FindUntiledPosition(Vector2 tiledPoint, Vector2 targetPoint, float bound) {
+            bool targetAboveMiddle = targetPoint.y > bound * 0.5f;
+            bool targetRightOfMiddle = targetPoint.x > bound * 0.5f;
+
+            bool tiledAboveMiddle = tiledPoint.y > bound * 0.5f;
+            bool tiledRightOfMiddle = tiledPoint.x > bound * 0.5f;
+
+            Vector2 untiledPoint = Vector2.zero;
+
+            if (targetAboveMiddle && targetRightOfMiddle) {
+                // Target is in upper right quadrant.
+                if (tiledAboveMiddle && !tiledRightOfMiddle) {
+                    // Tiled is in upper left quadrant.
+                    untiledPoint = new Vector2(tiledPoint.x + bound, tiledPoint.y);
+                } else if (!tiledAboveMiddle && !tiledRightOfMiddle) {
+                    // Tiled is in lower left quadrant.
+                    untiledPoint = new Vector2(tiledPoint.x + bound, tiledPoint.y + bound);
+                } else if (!tiledAboveMiddle && tiledRightOfMiddle) {
+                    // Tiled is in lower right quadrant.
+                    untiledPoint = new Vector2(tiledPoint.x, tiledPoint.y + bound);
+                }
+            } else if (targetAboveMiddle && !targetRightOfMiddle) {
+                // Target is in upper left quadrant.
+                if (tiledAboveMiddle && tiledRightOfMiddle) {
+                    // Tiled is in upper right quadrant.
+                    untiledPoint = new Vector2(tiledPoint.x - bound, tiledPoint.y);
+                } else if (!tiledAboveMiddle && !tiledRightOfMiddle) {
+                    // Tiled is in lower left quadrant.
+                    untiledPoint = new Vector2(tiledPoint.x, tiledPoint.y + bound);
+                } else if (!tiledAboveMiddle && tiledRightOfMiddle) {
+                    // Tiled is in lower right quadrant.
+                    untiledPoint = new Vector2(tiledPoint.x - bound, tiledPoint.y + bound);
+                }
+            } else if (!targetAboveMiddle && !targetRightOfMiddle) {
+                // Target is in lower left quadrant.
+                if (tiledAboveMiddle && tiledRightOfMiddle) {
+                    // Tiled is in upper right quadrant.
+                    untiledPoint = new Vector2(tiledPoint.x - bound, tiledPoint.y - bound);
+                } else if (tiledAboveMiddle && !tiledRightOfMiddle) {
+                    // Tiled is in upper left quadrant.
+                    untiledPoint = new Vector2(tiledPoint.x, tiledPoint.y - bound);
+                } else if (!tiledAboveMiddle && tiledRightOfMiddle) {
+                    // Tiled is in lower right quadrant.
+                    untiledPoint = new Vector2(tiledPoint.x - bound, tiledPoint.y);
+                }
+            } else if (!targetAboveMiddle && targetRightOfMiddle) {
+                // Target is in lower right quadrant.
+                if (tiledAboveMiddle && tiledRightOfMiddle) {
+                    // Tiled is in upper right quadrant.
+                    untiledPoint = new Vector2(tiledPoint.x, tiledPoint.y - bound);
+                } else if (tiledAboveMiddle && !tiledRightOfMiddle) {
+                    // Tiled is in upper left quadrant.
+                    untiledPoint = new Vector2(tiledPoint.x + bound, tiledPoint.y - bound);
+                } else if (!tiledAboveMiddle && !tiledRightOfMiddle) {
+                    // Tiled is in lower left quadrant.
+                    untiledPoint = new Vector2(tiledPoint.x + bound, tiledPoint.y);
+                }
+            }
+
+            return untiledPoint;
         }
 
         public static void LichenGrowthEvent(List<Cluster> clusters, int clusterIndex, int size, LichenParameters parameters, float[,,] layers) {
@@ -133,104 +235,31 @@ namespace StoneAge {
             }
         }
 
-        private static float CalculateEnvironmentalInfluence(LichenParameters parameters, float height) {
-            float direct = parameters.directLightSensitivity.Evaluate(Mathf.Clamp01(2 * height * height));
-            float indirect = parameters.indirectLightSensitivity.Evaluate(Mathf.Clamp01(height));
-            float moisture = parameters.moistureSensitivity.Evaluate(Mathf.Clamp01(1 - height));
-            return Mathf.Min(direct, Mathf.Min(indirect, moisture));
-        }
-
-        private static bool CheckCollision(Vector2 position1, Vector2 position2, float radius) {
-            return Vector2.SqrMagnitude(position1 - position2) <= radius * radius;
-        }
-
-        private static int FindNeighbors(List<LichenParticle> particles, LichenParticle particle, float radius) {
-            int numNeighbors = 0;
+        public static void SpawnCluster(ref List<Cluster> clusters, int size, LichenParameters parameters) {
+            bool spawned = false;
             
-            for (int i = 0; i < particles.Count; ++i) {
-                LichenParticle otherParticle = particles[i];
-                if (particle != otherParticle && Vector2.Distance(particle.position, otherParticle.position) <= radius) {
-                    numNeighbors++;
+            for (int i = 0; i < 100 && !spawned; ++i) {
+                Vector2 position = new Vector2(Random.Range(0.0f, size), Random.Range(0.0f, size));
+                bool collided = false;
+
+                for (int j = 0; j < clusters.Count && !collided; ++j) {
+                    Cluster cluster = clusters[j];
+                    if (cluster.bounds.Contains(position)) {
+                        List<LichenParticle> particles = cluster.particles;
+                        for (int k = 0; k < particles.Count; ++k) {
+                            if (CheckCollision(position, particles[k].position, parameters.particleRadius)) {
+                                collided = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                if (!collided) {
+                    clusters.Add(new Cluster(position, parameters));
+                    break;
                 }
             }
-
-            return numNeighbors;
-        }
-
-        private static Vector2 FindUntiledPosition(Vector2 tiledPoint, Vector2 targetPoint, float bound) {
-            bool targetAboveMiddle = targetPoint.y > bound * 0.5f;
-            bool targetRightOfMiddle = targetPoint.x > bound * 0.5f;
-
-            bool tiledAboveMiddle = tiledPoint.y > bound * 0.5f;
-            bool tiledRightOfMiddle = tiledPoint.x > bound * 0.5f;
-
-            Vector2 untiledPoint = Vector2.zero;
-
-            if (targetAboveMiddle && targetRightOfMiddle) {
-                // Target is in upper right quadrant.
-                if (tiledAboveMiddle && !tiledRightOfMiddle) {
-                    // Tiled is in upper left quadrant.
-                    untiledPoint = new Vector2(tiledPoint.x + bound, tiledPoint.y);
-                } else if (!tiledAboveMiddle && !tiledRightOfMiddle) {
-                    // Tiled is in lower left quadrant.
-                    untiledPoint = new Vector2(tiledPoint.x + bound, tiledPoint.y + bound);
-                } else if (!tiledAboveMiddle && tiledRightOfMiddle) {
-                    // Tiled is in lower right quadrant.
-                    untiledPoint = new Vector2(tiledPoint.x, tiledPoint.y + bound);
-                }
-            } else if (targetAboveMiddle && !targetRightOfMiddle) {
-                // Target is in upper left quadrant.
-                if (tiledAboveMiddle && tiledRightOfMiddle) {
-                    // Tiled is in upper right quadrant.
-                    untiledPoint = new Vector2(tiledPoint.x - bound, tiledPoint.y);
-                } else if (!tiledAboveMiddle && !tiledRightOfMiddle) {
-                    // Tiled is in lower left quadrant.
-                    untiledPoint = new Vector2(tiledPoint.x, tiledPoint.y + bound);
-                } else if (!tiledAboveMiddle && tiledRightOfMiddle) {
-                    // Tiled is in lower right quadrant.
-                    untiledPoint = new Vector2(tiledPoint.x - bound, tiledPoint.y + bound);
-                }
-            } else if (!targetAboveMiddle && !targetRightOfMiddle) {
-                // Target is in lower left quadrant.
-                if (tiledAboveMiddle && tiledRightOfMiddle) {
-                    // Tiled is in upper right quadrant.
-                    untiledPoint = new Vector2(tiledPoint.x - bound, tiledPoint.y - bound);
-                } else if (tiledAboveMiddle && !tiledRightOfMiddle) {
-                    // Tiled is in upper left quadrant.
-                    untiledPoint = new Vector2(tiledPoint.x, tiledPoint.y - bound);
-                } else if (!tiledAboveMiddle && tiledRightOfMiddle) {
-                    // Tiled is in lower right quadrant.
-                    untiledPoint = new Vector2(tiledPoint.x - bound, tiledPoint.y);
-                }
-            } else if (!targetAboveMiddle && targetRightOfMiddle) {
-                // Target is in lower right quadrant.
-                if (tiledAboveMiddle && tiledRightOfMiddle) {
-                    // Tiled is in upper right quadrant.
-                    untiledPoint = new Vector2(tiledPoint.x, tiledPoint.y - bound);
-                } else if (tiledAboveMiddle && !tiledRightOfMiddle) {
-                    // Tiled is in upper left quadrant.
-                    untiledPoint = new Vector2(tiledPoint.x + bound, tiledPoint.y - bound);
-                } else if (!tiledAboveMiddle && !tiledRightOfMiddle) {
-                    // Tiled is in lower left quadrant.
-                    untiledPoint = new Vector2(tiledPoint.x + bound, tiledPoint.y);
-                }
-            }
-
-            return untiledPoint;
-        }
-
-        public static float[,] CreateLichenBuffer(List<Cluster> clusters, int size) {
-            float[,] result = new float[size, size];
-
-            for (int i = 0; i < clusters.Count; ++i) {
-                List<LichenParticle> particles = clusters[i].particles;
-                for (int j = 0; j < particles.Count; ++j) {
-                    Vector2 position = particles[j].position;
-                    result[(int) position.x, (int) position.y] = 1.0f;
-                }
-            }
-
-            return result;
         }
     }
 }

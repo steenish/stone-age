@@ -105,7 +105,7 @@ namespace StoneAge {
 
             List<LichenGrowth.Cluster> lichenClusters = new List<LichenGrowth.Cluster>();
             for (int i = 0; i < lichenParameters.initialSeeds; ++i) {
-                lichenClusters.Add(new LichenGrowth.Cluster(new Vector2(Random.Range(0.0f, size), Random.Range(0.0f, size)), lichenParameters));
+                LichenGrowth.SpawnCluster(ref lichenClusters, size, lichenParameters);
             }
 
             LogTime("Initialization done", initializationStart);
@@ -136,6 +136,11 @@ namespace StoneAge {
                     // Perform lichen growth.
                     for (int i = 0; i < lichenClusters.Count; ++i) {
                         LichenGrowth.LichenGrowthEvent(lichenClusters, i, size, lichenParameters, layers);
+                    }
+
+                    // Spawn new lichen seeds.
+                    if (Random.value < lichenParameters.newSeedProbability) {
+                        LichenGrowth.SpawnCluster(ref lichenClusters, size, lichenParameters);
                     }
                 }
 
