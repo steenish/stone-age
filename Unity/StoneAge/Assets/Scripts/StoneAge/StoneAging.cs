@@ -22,6 +22,10 @@ namespace StoneAge {
         [SerializeField]
         private Texture2D heightMap = null;
 
+        [Header("Shaders")]
+        [SerializeField]
+        private Shader voronoiShader;
+
         [Header("General parameters")]
         [SerializeField]
         private int agingYears = 100;
@@ -186,7 +190,7 @@ namespace StoneAge {
 
             Height.NormalizeHeight(ref visits);
 
-            Color[,] lichenBuffer = LichenGrowth.CreateLichenBuffer(lichenClusters, size, lichenParameters.scale);
+            Color[,] lichenBuffer = LichenGrowth.CreateLichenBuffer(lichenClusters, size, voronoiShader, lichenParameters);
             Coloration.OverlayLichens(ref albedoBuffer, lichenBuffer);
 
             LogTime("Finalization done", finalizationStart);

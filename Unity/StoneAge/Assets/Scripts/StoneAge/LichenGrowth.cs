@@ -85,21 +85,53 @@ namespace StoneAge {
             return Vector2.SqrMagnitude(position1 - position2) <= radius * radius;
         }
 
-        public static Color[,] CreateLichenBuffer(List<Cluster> clusters, int size, float scale, int maxAge = 1000) {
-            Color[,] result = new Color[size, size];
-            float effectDenominator = (float) 1 / (maxAge * 365);
+        public static Color[,] CreateLichenBuffer(List<Cluster> clusters, int size, Shader voronoiShader, LichenParameters parameters) {
+            Material voronoiMaterial = new Material(voronoiShader);
+
+            RenderTexture result = RenderTexture.GetTemporary(size, size, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
+            RenderTexture dummy = RenderTexture.GetTemporary(size, size, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
 
             for (int i = 0; i < clusters.Count; ++i) {
                 List<LichenParticle> particles = clusters[i].particles;
-                Gradient speciesColorGradient = clusters[i].species.colorGradient;
+                Vector4[] particlePositions = new Vector4[particles.Count];
                 for (int j = 0; j < particles.Count; ++j) {
-                    Vector2 position = particles[j].position;
-                    Color particleColor = speciesColorGradient.Evaluate(particles[j].age * effectDenominator);
-                    result[(int) (position.x * scale), (int) (position.y * scale)] = particleColor;
+                    particlePositions[j] = particles[j].position;
                 }
+                Color clusterColor = clusters[i].species.colorGradient.Evaluate(0);
+
+                voronoiMaterial.SetInt("_ParticleCount", particles.Count);
+                voronoiMaterial.SetInt("_Size", size);
+                voronoiMaterial.SetFloat("_Scale", parameters.scale);
+                voronoiMaterial.SetVectorArray("_Particles", particlePositions);
+                voronoiMaterial.SetFloat("_MaxDistance", 2.0f * parameters.particleRadius);
+                voronoiMaterial.SetColor("_ClusterColor", clusterColor);
+
+                Graphics.Blit(result, dummy, voronoiMaterial);
+                Graphics.Blit(dummy, result);
             }
 
-            return result;
+            return Conversion.CreateColorBuffer(Textures.GetRTPixels(result));
+
+            //for (int i = 0; i < clusters.Count; ++i) {
+            //    List<LichenParticle> particles = clusters[i].particles;
+            //    Color clusterColor = clusters[i].species.colorGradient.Evaluate(0);
+            //    for (int y = 0; y < size; ++y) {
+            //        for (int x = 0; x < size; ++x) {
+            //            float minDistance = float.PositiveInfinity;
+            //            for (int j = 0; j < particles.Count; ++j) {
+            //                float distance = Vector2.Distance(new Vector2(x, y), particles[j].position);
+            //                if (distance < minDistance) {
+            //                    minDistance = distance;
+            //                }
+            //            }
+            //            if (minDistance < 2.0f * parameters.particleRadius) {
+            //                result[x, y] = clusterColor;
+            //            }
+            //        }
+            //    }
+            //}
+
+            //return result;
         }
 
         private static int FindNeighbors(List<LichenParticle> particles, LichenParticle particle, float radius) {
@@ -182,9 +214,7 @@ namespace StoneAge {
             Cluster sourceCluster = clusters[clusterIndex];
             int numParticles = sourceCluster.particles.Count;
             LichenParticle randomParticle = sourceCluster.particles[Random.Range(0, numParticles)];
-            //Vector2 direction = Random.insideUnitCircle.normalized;
             Vector2 direction = randomParticle == sourceCluster.source ? Random.insideUnitCircle.normalized : (randomParticle.position - sourceCluster.source.position).normalized;
-            //Vector2 direction = (randomParticle.position - sourceCluster.source.position).normalized;
             Vector2 newPosition = randomParticle.position + direction * (2 * parameters.particleRadius + parameters.spawnEpsilon);
             newPosition = Height.TilePosition(newPosition, size);
             LichenParticle particle = new LichenParticle(newPosition, parameters.particleRadius);
