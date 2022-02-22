@@ -24,6 +24,8 @@ namespace StoneAge {
 
         [System.Serializable]
         public class LichenParameters {
+            [Range(0.1f, 10.0f)]
+            public float scale = 1.0f;
             [Range(0, 20)]
             public int initialSeeds = 5;
             [Range(0.00001f, 0.1f)]
@@ -83,7 +85,7 @@ namespace StoneAge {
             return Vector2.SqrMagnitude(position1 - position2) <= radius * radius;
         }
 
-        public static Color[,] CreateLichenBuffer(List<Cluster> clusters, int size, int maxAge = 1000) {
+        public static Color[,] CreateLichenBuffer(List<Cluster> clusters, int size, float scale, int maxAge = 1000) {
             Color[,] result = new Color[size, size];
             float effectDenominator = (float) 1 / (maxAge * 365);
 
@@ -93,7 +95,7 @@ namespace StoneAge {
                 for (int j = 0; j < particles.Count; ++j) {
                     Vector2 position = particles[j].position;
                     Color particleColor = speciesColorGradient.Evaluate(particles[j].age * effectDenominator);
-                    result[(int) position.x, (int) position.y] = particleColor;
+                    result[(int) (position.x * scale), (int) (position.y * scale)] = particleColor;
                 }
             }
 
@@ -176,6 +178,7 @@ namespace StoneAge {
         }
 
         public static void LichenGrowthEvent(List<Cluster> clusters, int clusterIndex, int size, LichenParameters parameters, float[,,] layers) {
+            size = (int) (size / parameters.scale);
             Cluster sourceCluster = clusters[clusterIndex];
             int numParticles = sourceCluster.particles.Count;
             LichenParticle randomParticle = sourceCluster.particles[Random.Range(0, numParticles)];
@@ -210,7 +213,7 @@ namespace StoneAge {
                         if (otherParticle != particle && CheckCollision(comparisonPosition, otherParticle.position, parameters.particleRadius)) {
                             int numNeighbors = FindNeighbors(sourceCluster.particles, particle, parameters.rho);
                             float theoreticalAggregation = parameters.alpha + (1 - parameters.alpha) * Mathf.Exp(-parameters.sigma * (numNeighbors - parameters.tau));
-                            float height = Height.GetAggregatedValue((int) particle.position.x, (int) particle.position.y, layers);
+                            float height = Height.GetAggregatedValue((int) (particle.position.x * parameters.scale), (int) (particle.position.y * parameters.scale), layers);
                             float environmentInfluence = CalculateEnvironmentalInfluence(parameters, height);
                             float aggregationProbability = environmentInfluence * theoreticalAggregation;
                             if (Random.value < aggregationProbability) {
@@ -251,6 +254,7 @@ namespace StoneAge {
         }
 
         public static void SpawnCluster(ref List<Cluster> clusters, int size, LichenParameters parameters) {
+            size = (int) (size / parameters.scale);
             bool spawned = false;
             
             for (int i = 0; i < 100 && !spawned; ++i) {

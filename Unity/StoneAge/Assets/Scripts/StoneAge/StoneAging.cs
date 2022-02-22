@@ -186,7 +186,7 @@ namespace StoneAge {
 
             Height.NormalizeHeight(ref visits);
 
-            Color[,] lichenBuffer = LichenGrowth.CreateLichenBuffer(lichenClusters, size);
+            Color[,] lichenBuffer = LichenGrowth.CreateLichenBuffer(lichenClusters, size, lichenParameters.scale);
             Coloration.OverlayLichens(ref albedoBuffer, lichenBuffer);
 
             LogTime("Finalization done", finalizationStart);
