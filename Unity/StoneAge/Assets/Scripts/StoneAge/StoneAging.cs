@@ -96,8 +96,7 @@ namespace StoneAge {
             float[,] efflorescenceNoise = Textures.PerlinNoise(size, colorationParameters.noiseScale);
 
             // Create buffers from the input textures.
-            Color[,] albedoBuffer = null;
-            albedoBuffer = Conversion.CreateColorBuffer(albedoMap);
+            Color[,] albedoBuffer = Conversion.CreateColorBuffer(albedoMap);
 
             float[,,] layers = new float[size, size, 2];
             float[,] originalRockHeight = Conversion.CreateFloatBuffer(heightMap);

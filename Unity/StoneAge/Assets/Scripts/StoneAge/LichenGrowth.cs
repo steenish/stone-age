@@ -199,8 +199,8 @@ namespace StoneAge {
                             float environmentInfluence = CalculateEnvironmentalInfluence(parameters, height);
                             float aggregationProbability = environmentInfluence * theoreticalAggregation;
                             if (Random.value < aggregationProbability) {
-                                Vector2 offset = (particle.position - otherParticle.position).normalized * parameters.particleRadius * 2.0f;
-                                particle.position = otherParticle.position + offset;
+                                Vector2 offset = 2.0f * parameters.particleRadius * (particle.position - otherParticle.position).normalized;
+                                particle.position = Height.TilePosition(otherParticle.position + offset, size);
                                 sourceCluster.particles.Add(particle);
                                 Vector2 encapsulationOffset = (particle.position - sourceCluster.source.position).normalized * parameters.particleRadius;
                                 sourceCluster.bounds.Encapsulate(particle.position + encapsulationOffset);
