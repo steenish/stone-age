@@ -24,7 +24,7 @@ namespace StoneAge {
 
         [Header("Shaders")]
         [SerializeField]
-        private Shader voronoiShader;
+        private Shader utilityShader;
 
         [Header("General parameters")]
         [SerializeField]
@@ -190,8 +190,7 @@ namespace StoneAge {
 
             Height.NormalizeHeight(ref visits);
 
-            Color[,] lichenBuffer = LichenGrowth.CreateLichenBuffer(lichenClusters, size, voronoiShader, lichenParameters);
-            Coloration.OverlayLichens(ref albedoBuffer, lichenBuffer);
+            Texture2D[] lichenResults = LichenGrowth.CreateLichenBuffer(lichenClusters, size, Conversion.CreateTexture(size, albedoBuffer), utilityShader, lichenParameters);
 
             LogTime("Finalization done", finalizationStart);
 
@@ -205,14 +204,14 @@ namespace StoneAge {
 
                 string savePath = System.Environment.GetFolderPath(saveLocation) + "/" + folderName + "/";
                 System.IO.Directory.CreateDirectory(savePath);
-                Textures.SaveTextureAsPNG(Conversion.CreateTexture(size, albedoBuffer), savePath + "Albedo_Aged_" + agingYears + ".png");
+                Textures.SaveTextureAsPNG(lichenResults[0], savePath + "Albedo_Aged_" + agingYears + ".png");
                 Textures.SaveTextureAsPNG(Conversion.CreateTexture(size, heightBuffer), savePath + "Height_Aged_" + agingYears + ".png");
 
                 if (saveDebugTextures) {
                     Textures.SaveTextureAsPNG(Conversion.CreateTexture(size, erosionBuffer), savePath + "Erosion_Buffer_" + agingYears + ".png");
                     Textures.SaveTextureAsPNG(Conversion.CreateTexture(size, sedimentBuffer), savePath + "Sediment_Buffer_" + agingYears + ".png");
                     Textures.SaveTextureAsPNG(Conversion.CreateTexture(size, visits), savePath + "Visit_Buffer_" + agingYears + ".png");
-                    Textures.SaveTextureAsPNG(Conversion.CreateTexture(size, lichenBuffer), savePath + "Lichen_Buffer_" + agingYears + ".png");
+                    Textures.SaveTextureAsPNG(lichenResults[1], savePath + "Lichen_Buffer_" + agingYears + ".png");
                 }
 
                 LogTime("Saving done", savingStart);

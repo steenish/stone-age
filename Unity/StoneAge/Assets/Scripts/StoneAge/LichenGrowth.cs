@@ -85,53 +85,41 @@ namespace StoneAge {
             return Vector2.SqrMagnitude(position1 - position2) <= radius * radius;
         }
 
-        public static Color[,] CreateLichenBuffer(List<Cluster> clusters, int size, Shader voronoiShader, LichenParameters parameters) {
-            Material voronoiMaterial = new Material(voronoiShader);
+        public static Texture2D[] CreateLichenBuffer(List<Cluster> clusters, int size, Texture2D albedoTexture, Shader utilityShader, LichenParameters parameters) {
+            RenderTexture previous = RenderTexture.active;
+            Material utilityMaterial = new Material(utilityShader);
 
             RenderTexture result = RenderTexture.GetTemporary(size, size, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
             RenderTexture dummy = RenderTexture.GetTemporary(size, size, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
 
+            int lichenSize = (int) (size / parameters.scale);
             for (int i = 0; i < clusters.Count; ++i) {
                 List<LichenParticle> particles = clusters[i].particles;
                 Vector4[] particlePositions = new Vector4[particles.Count];
                 for (int j = 0; j < particles.Count; ++j) {
-                    particlePositions[j] = particles[j].position;
+                    particlePositions[j] = Height.TilePosition(particles[j].position, lichenSize);
                 }
                 Color clusterColor = clusters[i].species.colorGradient.Evaluate(0);
 
-                voronoiMaterial.SetInt("_ParticleCount", particles.Count);
-                voronoiMaterial.SetInt("_Size", size);
-                voronoiMaterial.SetFloat("_Scale", parameters.scale);
-                voronoiMaterial.SetVectorArray("_Particles", particlePositions);
-                voronoiMaterial.SetFloat("_MaxDistance", 2.0f * parameters.particleRadius);
-                voronoiMaterial.SetColor("_ClusterColor", clusterColor);
+                utilityMaterial.SetInt("_ParticleCount", particles.Count);
+                utilityMaterial.SetInt("_Size", size);
+                utilityMaterial.SetFloat("_Scale", parameters.scale);
+                utilityMaterial.SetVectorArray("_Particles", particlePositions);
+                utilityMaterial.SetFloat("_MaxDistance", 2.0f * parameters.particleRadius);
+                utilityMaterial.SetColor("_ClusterColor", clusterColor);
 
-                Graphics.Blit(result, dummy, voronoiMaterial);
+                Graphics.Blit(result, dummy, utilityMaterial, 0); // Voronoi pass.
                 Graphics.Blit(dummy, result);
             }
 
-            return Conversion.CreateColorBuffer(Textures.GetRTPixels(result));
+            Texture2D[] finalResults = new Texture2D[2];
+            finalResults[1] = Textures.GetRTPixels(result);
 
-            //for (int i = 0; i < clusters.Count; ++i) {
-            //    List<LichenParticle> particles = clusters[i].particles;
-            //    Color clusterColor = clusters[i].species.colorGradient.Evaluate(0);
-            //    for (int y = 0; y < size; ++y) {
-            //        for (int x = 0; x < size; ++x) {
-            //            float minDistance = float.PositiveInfinity;
-            //            for (int j = 0; j < particles.Count; ++j) {
-            //                float distance = Vector2.Distance(new Vector2(x, y), particles[j].position);
-            //                if (distance < minDistance) {
-            //                    minDistance = distance;
-            //                }
-            //            }
-            //            if (minDistance < 2.0f * parameters.particleRadius) {
-            //                result[x, y] = clusterColor;
-            //            }
-            //        }
-            //    }
-            //}
-
-            //return result;
+            utilityMaterial.SetTexture("_AlbedoTex", albedoTexture);
+            Graphics.Blit(result, dummy, utilityMaterial, 1); // Blend with albedo.
+            finalResults[0] = Textures.GetRTPixels(dummy);
+            RenderTexture.active = previous;
+            return finalResults;
         }
 
         private static int FindNeighbors(List<LichenParticle> particles, LichenParticle particle, float radius) {
@@ -147,68 +135,6 @@ namespace StoneAge {
             return numNeighbors;
         }
 
-        private static Vector2 FindUntiledPosition(Vector2 tiledPoint, Vector2 targetPoint, float bound) {
-            bool targetAboveMiddle = targetPoint.y > bound * 0.5f;
-            bool targetRightOfMiddle = targetPoint.x > bound * 0.5f;
-
-            bool tiledAboveMiddle = tiledPoint.y > bound * 0.5f;
-            bool tiledRightOfMiddle = tiledPoint.x > bound * 0.5f;
-
-            Vector2 untiledPoint = Vector2.zero;
-
-            if (targetAboveMiddle && targetRightOfMiddle) {
-                // Target is in upper right quadrant.
-                if (tiledAboveMiddle && !tiledRightOfMiddle) {
-                    // Tiled is in upper left quadrant.
-                    untiledPoint = new Vector2(tiledPoint.x + bound, tiledPoint.y);
-                } else if (!tiledAboveMiddle && !tiledRightOfMiddle) {
-                    // Tiled is in lower left quadrant.
-                    untiledPoint = new Vector2(tiledPoint.x + bound, tiledPoint.y + bound);
-                } else if (!tiledAboveMiddle && tiledRightOfMiddle) {
-                    // Tiled is in lower right quadrant.
-                    untiledPoint = new Vector2(tiledPoint.x, tiledPoint.y + bound);
-                }
-            } else if (targetAboveMiddle && !targetRightOfMiddle) {
-                // Target is in upper left quadrant.
-                if (tiledAboveMiddle && tiledRightOfMiddle) {
-                    // Tiled is in upper right quadrant.
-                    untiledPoint = new Vector2(tiledPoint.x - bound, tiledPoint.y);
-                } else if (!tiledAboveMiddle && !tiledRightOfMiddle) {
-                    // Tiled is in lower left quadrant.
-                    untiledPoint = new Vector2(tiledPoint.x, tiledPoint.y + bound);
-                } else if (!tiledAboveMiddle && tiledRightOfMiddle) {
-                    // Tiled is in lower right quadrant.
-                    untiledPoint = new Vector2(tiledPoint.x - bound, tiledPoint.y + bound);
-                }
-            } else if (!targetAboveMiddle && !targetRightOfMiddle) {
-                // Target is in lower left quadrant.
-                if (tiledAboveMiddle && tiledRightOfMiddle) {
-                    // Tiled is in upper right quadrant.
-                    untiledPoint = new Vector2(tiledPoint.x - bound, tiledPoint.y - bound);
-                } else if (tiledAboveMiddle && !tiledRightOfMiddle) {
-                    // Tiled is in upper left quadrant.
-                    untiledPoint = new Vector2(tiledPoint.x, tiledPoint.y - bound);
-                } else if (!tiledAboveMiddle && tiledRightOfMiddle) {
-                    // Tiled is in lower right quadrant.
-                    untiledPoint = new Vector2(tiledPoint.x - bound, tiledPoint.y);
-                }
-            } else if (!targetAboveMiddle && targetRightOfMiddle) {
-                // Target is in lower right quadrant.
-                if (tiledAboveMiddle && tiledRightOfMiddle) {
-                    // Tiled is in upper right quadrant.
-                    untiledPoint = new Vector2(tiledPoint.x, tiledPoint.y - bound);
-                } else if (tiledAboveMiddle && !tiledRightOfMiddle) {
-                    // Tiled is in upper left quadrant.
-                    untiledPoint = new Vector2(tiledPoint.x + bound, tiledPoint.y - bound);
-                } else if (!tiledAboveMiddle && !tiledRightOfMiddle) {
-                    // Tiled is in lower left quadrant.
-                    untiledPoint = new Vector2(tiledPoint.x + bound, tiledPoint.y);
-                }
-            }
-
-            return untiledPoint;
-        }
-
         public static void LichenGrowthEvent(List<Cluster> clusters, int clusterIndex, int size, LichenParameters parameters, float[,,] layers) {
             size = (int) (size / parameters.scale);
             Cluster sourceCluster = clusters[clusterIndex];
@@ -216,7 +142,6 @@ namespace StoneAge {
             LichenParticle randomParticle = sourceCluster.particles[Random.Range(0, numParticles)];
             Vector2 direction = randomParticle == sourceCluster.source ? Random.insideUnitCircle.normalized : (randomParticle.position - sourceCluster.source.position).normalized;
             Vector2 newPosition = randomParticle.position + direction * (2 * parameters.particleRadius + parameters.spawnEpsilon);
-            newPosition = Height.TilePosition(newPosition, size);
             LichenParticle particle = new LichenParticle(newPosition, parameters.particleRadius);
 
             // Update ages.
@@ -227,28 +152,22 @@ namespace StoneAge {
             bool resolved = false;
 
             for (int step = 0; step < parameters.maxPath && !resolved; ++step) {
-                // Check if particle in its tiled or untiled position are inside the radius.
-                Vector2 untiledPosition = FindUntiledPosition(particle.position, randomParticle.position, size);
-                bool tiledInRange = Vector2.Distance(randomParticle.position, particle.position) < parameters.deathRadius;
-                bool untiledInRange = Vector2.Distance(randomParticle.position, untiledPosition) < parameters.deathRadius;
+                Vector2 tiledHeightPosition = Height.TilePosition(particle.position, size) * parameters.scale;
+                float height = Height.GetAggregatedValue((int) tiledHeightPosition.x, (int) tiledHeightPosition.y, layers);
+                float environmentInfluence = CalculateEnvironmentalInfluence(parameters, height);
 
-                // If either are true, particle is inside the radius.
-                if (tiledInRange || untiledInRange) {
+                // Check if particle is within the death radius.
+                if (Vector2.Distance(randomParticle.position, particle.position) < parameters.deathRadius) {
                     // Check collision with the current cluster.
-                    // Get the tiled position first, then the untiled position if necessary.
-                    Vector2 comparisonPosition = tiledInRange ? particle.position : untiledPosition;
-
                     for (int i = 0; i < sourceCluster.particles.Count; ++i) {
                         LichenParticle otherParticle = sourceCluster.particles[i];
-                        if (otherParticle != particle && CheckCollision(comparisonPosition, otherParticle.position, parameters.particleRadius)) {
+                        if (otherParticle != particle && CheckCollision(particle.position, otherParticle.position, parameters.particleRadius)) {
                             int numNeighbors = FindNeighbors(sourceCluster.particles, particle, parameters.rho);
                             float theoreticalAggregation = parameters.alpha + (1 - parameters.alpha) * Mathf.Exp(-parameters.sigma * (numNeighbors - parameters.tau));
-                            float height = Height.GetAggregatedValue((int) (particle.position.x * parameters.scale), (int) (particle.position.y * parameters.scale), layers);
-                            float environmentInfluence = CalculateEnvironmentalInfluence(parameters, height);
                             float aggregationProbability = environmentInfluence * theoreticalAggregation;
                             if (Random.value < aggregationProbability) {
                                 Vector2 offset = 2.0f * parameters.particleRadius * (particle.position - otherParticle.position).normalized;
-                                particle.position = Height.TilePosition(otherParticle.position + offset, size);
+                                particle.position = otherParticle.position + offset;
                                 sourceCluster.particles.Add(particle);
                                 Vector2 encapsulationOffset = (particle.position - sourceCluster.source.position).normalized * parameters.particleRadius;
                                 sourceCluster.bounds.Encapsulate(particle.position + encapsulationOffset);
@@ -261,12 +180,14 @@ namespace StoneAge {
 
                 // Check collision with other clusters.
                 if (!resolved) {
+                    Vector2 tiledPosition = Height.TilePosition(particle.position, size);
                     for (int i = 0; i < clusters.Count && !resolved; ++i) {
                         Cluster cluster = clusters[i];
                         if (cluster != sourceCluster && cluster.bounds.Contains(particle.position)) {
                             List<LichenParticle> particles = cluster.particles;
                             for (int j = 0; j < particles.Count; ++j) {
-                                if (CheckCollision(particle.position, particles[j].position, parameters.particleRadius)) {
+                                if (CheckCollision(tiledPosition, Height.TilePosition(particles[j].position, size), parameters.particleRadius)) {
+                                    // Particles collided, discard particle.
                                     resolved = true;
                                     break;
                                 }
@@ -275,10 +196,9 @@ namespace StoneAge {
                     }
                 }
 
-                // Move particle, making sure to tile the new position.
+                // Move particle.
                 if (!resolved) {
                     particle.position += Random.insideUnitCircle.normalized * parameters.stepDistance;
-                    particle.position = Height.TilePosition(particle.position, size);
                 }
             }
         }
