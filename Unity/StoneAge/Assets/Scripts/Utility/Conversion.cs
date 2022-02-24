@@ -114,7 +114,11 @@ namespace Utility {
         public static float[,] SumMap(float[,] leftHandSide, float[,] rightHandSide) {
             return BinaryArithmeticMap(leftHandSide, rightHandSide, (float lhs, float rhs) => lhs + rhs);
         }
-        
+
+        public static float[,] ScalarMultMap(float[,] leftHandSide, float rightHandSide) {
+            return BinaryArithmeticMap(leftHandSide, rightHandSide, (float lhs, float rhs) => lhs * rhs);
+        }
+
         private static float[,] BinaryArithmeticMap(float[,] leftHandSide, float[,] rightHandSide, Func<float, float, float> binaryArithmeticFunction) {
             int size = leftHandSide.GetLength(0);
 
@@ -123,6 +127,20 @@ namespace Utility {
             for (int y = 0; y < size; ++y) {
                 for (int x = 0; x < size; ++x) {
                     result[x, y] = binaryArithmeticFunction(leftHandSide[x, y], rightHandSide[x, y]);
+                }
+            }
+
+            return result;
+        }
+
+        private static float[,] BinaryArithmeticMap(float[,] leftHandSide, float rightHandSide, Func<float, float, float> binaryArithmeticFunction) {
+            int size = leftHandSide.GetLength(0);
+
+            float[,] result = new float[size, size];
+
+            for (int y = 0; y < size; ++y) {
+                for (int x = 0; x < size; ++x) {
+                    result[x, y] = binaryArithmeticFunction(leftHandSide[x, y], rightHandSide);
                 }
             }
 

@@ -51,6 +51,8 @@ namespace StoneAge {
             public float newSeedProbability = 0.001f;
             [Range(50.0f, 300.0f)]
             public float noiseScale = 100.0f;
+            [Range(0.01f, 2.0f)]
+            public float lichenHeightScale = 0.2f;
             public Species[] species;
             public AnimationCurve directLightSensitivity;
             public AnimationCurve indirectLightSensitivity;
@@ -88,7 +90,8 @@ namespace StoneAge {
             RenderTexture previous = RenderTexture.active;
             Material utilityMaterial = new Material(utilityShader);
 
-            RenderTexture result = RenderTexture.GetTemporary(size, size, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
+            RenderTexture colorResult = RenderTexture.GetTemporary(size, size, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
+            RenderTexture heightResult = RenderTexture.GetTemporary(size, size, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
             RenderTexture dummy = RenderTexture.GetTemporary(size, size, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
 
             Texture2D noiseTexture = Textures.PerlinNoiseTexture(size, parameters.noiseScale);
@@ -111,16 +114,23 @@ namespace StoneAge {
                 utilityMaterial.SetFloat("_MaxDistance", 2.0f * parameters.particleRadius * parameters.scale);
                 utilityMaterial.SetColor("_ClusterColor", clusterColor);
 
-                Graphics.Blit(result, dummy, utilityMaterial, 0); // Voronoi pass.
-                Graphics.Blit(dummy, result);
+                Graphics.Blit(colorResult, dummy, utilityMaterial, 0); // Voronoi pass.
+                Graphics.Blit(dummy, colorResult);
+
+                utilityMaterial.SetColor("_ClusterColor", Color.white);
+                Graphics.Blit(heightResult, dummy, utilityMaterial, 0); // Height pass.
+                Graphics.Blit(dummy, heightResult);
             }
 
-            Texture2D[] finalResults = new Texture2D[2];
-            finalResults[1] = Textures.GetRTPixels(result);
+            Texture2D[] finalResults = new Texture2D[3];
+            finalResults[2] = Textures.GetRTPixels(colorResult);
 
             utilityMaterial.SetTexture("_AlbedoTex", albedoTexture);
-            Graphics.Blit(result, dummy, utilityMaterial, 1); // Blend with albedo.
+            Graphics.Blit(colorResult, dummy, utilityMaterial, 1); // Blend with albedo.
             finalResults[0] = Textures.GetRTPixels(dummy);
+
+            finalResults[1] = Textures.GetRTPixels(heightResult);
+
             RenderTexture.active = previous;
             return finalResults;
         }

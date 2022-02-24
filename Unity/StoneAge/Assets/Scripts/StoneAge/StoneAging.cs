@@ -191,6 +191,10 @@ namespace StoneAge {
             Height.NormalizeHeight(ref visits);
 
             Texture2D[] lichenResults = LichenGrowth.CreateLichenTexture(lichenClusters, size, Conversion.CreateTexture(size, albedoBuffer), utilityShader, lichenParameters);
+            float[,] lichenHeight = Conversion.CreateFloatBuffer(lichenResults[1]);
+            lichenHeight = Conversion.ScalarMultMap(lichenHeight, lichenParameters.lichenHeightScale);
+            heightBuffer = Conversion.SumMap(heightBuffer, lichenHeight);
+            Height.NormalizeHeight(ref heightBuffer);
 
             LogTime("Finalization done", finalizationStart);
 
@@ -211,7 +215,8 @@ namespace StoneAge {
                     Textures.SaveTextureAsPNG(Conversion.CreateTexture(size, erosionBuffer), savePath + "Erosion_Buffer_" + agingYears + ".png");
                     Textures.SaveTextureAsPNG(Conversion.CreateTexture(size, sedimentBuffer), savePath + "Sediment_Buffer_" + agingYears + ".png");
                     Textures.SaveTextureAsPNG(Conversion.CreateTexture(size, visits), savePath + "Visit_Buffer_" + agingYears + ".png");
-                    Textures.SaveTextureAsPNG(lichenResults[1], savePath + "Lichen_Buffer_" + agingYears + ".png");
+                    Textures.SaveTextureAsPNG(lichenResults[2], savePath + "Lichen_Buffer_" + agingYears + ".png");
+                    Textures.SaveTextureAsPNG(lichenResults[1], savePath + "Lichen_Height_Buffer_" + agingYears + ".png");
                 }
 
                 LogTime("Saving done", savingStart);
