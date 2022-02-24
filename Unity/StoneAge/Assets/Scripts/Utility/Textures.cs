@@ -142,15 +142,16 @@ namespace Utility {
             return result;
         }
 
-        public static Texture2D PerlinNoiseTexture(int size) {
+        public static Texture2D PerlinNoiseTexture(int size, float scale) {
             float originX = Random.Range(-50000.0f, 50000.0f);
             float originY = Random.Range(-50000.0f, 50000.0f);
 
             Color32[] colors = new Color32[size * size];
+            float step = scale / size;
 
             for (int y = 0; y < size; ++y) {
                 for (int x = 0; x < size; ++x) {
-                    byte perlinValue = System.Convert.ToByte(Mathf.Clamp01(Mathf.PerlinNoise(originX + x, originY + y)) * 255);
+                    byte perlinValue = System.Convert.ToByte(Mathf.Clamp01(Mathf.PerlinNoise(originX + x * step, originY + y * step)) * 255);
                     colors[x + y * size] = new Color32(perlinValue, perlinValue, perlinValue, 255);
                 }
             }

@@ -190,7 +190,7 @@ namespace StoneAge {
 
             Height.NormalizeHeight(ref visits);
 
-            Texture2D[] lichenResults = LichenGrowth.CreateLichenBuffer(lichenClusters, size, Conversion.CreateTexture(size, albedoBuffer), utilityShader, lichenParameters);
+            Texture2D[] lichenResults = LichenGrowth.CreateLichenTexture(lichenClusters, size, Conversion.CreateTexture(size, albedoBuffer), utilityShader, lichenParameters);
 
             LogTime("Finalization done", finalizationStart);
 

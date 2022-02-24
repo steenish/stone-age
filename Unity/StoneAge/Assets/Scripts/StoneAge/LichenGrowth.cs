@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Utility;
+using System.Linq;
 
 namespace StoneAge {
     public class LichenGrowth {
@@ -48,6 +49,8 @@ namespace StoneAge {
             public float deathRadius = 10.0f;
             [Range(0.0f, 0.1f)]
             public float newSeedProbability = 0.001f;
+            [Range(50.0f, 300.0f)]
+            public float noiseScale = 100.0f;
             public Species[] species;
             public AnimationCurve directLightSensitivity;
             public AnimationCurve indirectLightSensitivity;
@@ -67,11 +70,7 @@ namespace StoneAge {
 
         [System.Serializable]
         public class Species {
-            public Gradient colorGradient;
-
-            public Species(Gradient colorGradient) {
-                this.colorGradient = colorGradient;
-            }
+            public Color color;
         }
 
         private static float CalculateEnvironmentalInfluence(LichenParameters parameters, float height) {
@@ -85,27 +84,31 @@ namespace StoneAge {
             return Vector2.SqrMagnitude(position1 - position2) <= radius * radius;
         }
 
-        public static Texture2D[] CreateLichenBuffer(List<Cluster> clusters, int size, Texture2D albedoTexture, Shader utilityShader, LichenParameters parameters) {
+        public static Texture2D[] CreateLichenTexture(List<Cluster> clusters, int size, Texture2D albedoTexture, Shader utilityShader, LichenParameters parameters) {
             RenderTexture previous = RenderTexture.active;
             Material utilityMaterial = new Material(utilityShader);
 
             RenderTexture result = RenderTexture.GetTemporary(size, size, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
             RenderTexture dummy = RenderTexture.GetTemporary(size, size, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
 
-            int lichenSize = (int) (size / parameters.scale);
+            Texture2D noiseTexture = Textures.PerlinNoiseTexture(size, parameters.noiseScale);
+            utilityMaterial.SetTexture("_NoiseTex", noiseTexture);
+
+            // Sort to avoid capping position array size.
+            clusters.Sort((c1, c2) => c2.particles.Count.CompareTo(c1.particles.Count));
+
             for (int i = 0; i < clusters.Count; ++i) {
                 List<LichenParticle> particles = clusters[i].particles;
                 Vector4[] particlePositions = new Vector4[particles.Count];
                 for (int j = 0; j < particles.Count; ++j) {
-                    particlePositions[j] = Height.TilePosition(particles[j].position, lichenSize);
+                    particlePositions[j] = Height.TilePosition(particles[j].position * parameters.scale, size);
                 }
-                Color clusterColor = clusters[i].species.colorGradient.Evaluate(0);
+                Color clusterColor = clusters[i].species.color;
 
                 utilityMaterial.SetInt("_ParticleCount", particles.Count);
                 utilityMaterial.SetInt("_Size", size);
-                utilityMaterial.SetFloat("_Scale", parameters.scale);
                 utilityMaterial.SetVectorArray("_Particles", particlePositions);
-                utilityMaterial.SetFloat("_MaxDistance", 2.0f * parameters.particleRadius);
+                utilityMaterial.SetFloat("_MaxDistance", 2.0f * parameters.particleRadius * parameters.scale);
                 utilityMaterial.SetColor("_ClusterColor", clusterColor);
 
                 Graphics.Blit(result, dummy, utilityMaterial, 0); // Voronoi pass.

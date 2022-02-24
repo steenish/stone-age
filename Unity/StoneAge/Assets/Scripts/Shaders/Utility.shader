@@ -17,8 +17,11 @@ Shader "Hidden/Utility"
             CGPROGRAM
             #pragma vertex vert
             #pragma fragment frag
+            
+            #define PI 3.141593
 
             #include "UnityCG.cginc"
+            #include "Helpers.cginc"
 
             struct appdata
             {
@@ -41,68 +44,22 @@ Shader "Hidden/Utility"
             }
 
             sampler2D _MainTex;
+            sampler2D _NoiseTex;
             int _ParticleCount = 0;
             int _Size = 2048;
-            float _Scale = 1;
             float4 _Particles[2048];
             float _MaxDistance = 2;
             float4 _ClusterColor = float4(1,1,1,1);
 
-            float findMinUntiledDistance(float2 tiledPoint, float2 targetPoint, float bound) {
-                bool targetAboveMiddle = targetPoint.y > bound * 0.5;
-                bool targetRightOfMiddle = targetPoint.x > bound * 0.5;
-
-                float dist = 0.0f;
-
-                if (targetAboveMiddle && targetRightOfMiddle) {
-                    // Target is in upper right quadrant.
-                    // Tiled in upper left quadrant.
-                    float dist1 = distance(targetPoint, float2(tiledPoint.x + bound, tiledPoint.y));
-                    // Tiled in lower left quadrant.
-                    float dist2 = distance(targetPoint, float2(tiledPoint.x + bound, tiledPoint.y + bound));
-                    // Tiled in lower right quadrant.
-                    float dist3 = distance(targetPoint, float2(tiledPoint.x, tiledPoint.y + bound));
-                    dist = min(dist1,  min(dist2, dist3));
-                } else if (targetAboveMiddle && !targetRightOfMiddle) {
-                    // Target is in upper left quadrant.
-                    // Tiled in upper right quadrant.
-                    float dist1 = distance(targetPoint, float2(tiledPoint.x - bound, tiledPoint.y));
-                    // Tiled in lower left quadrant.
-                    float dist2 = distance(targetPoint, float2(tiledPoint.x, tiledPoint.y + bound));
-                    // Tiled in lower right quadrant.
-                    float dist3 = distance(targetPoint, float2(tiledPoint.x - bound, tiledPoint.y + bound));
-                    dist = min(dist1,  min(dist2, dist3));
-                } else if (!targetAboveMiddle && !targetRightOfMiddle) {
-                    // Target is in lower left quadrant.
-                    // Tiled in upper right quadrant.
-                    float dist1 = distance(targetPoint, float2(tiledPoint.x - bound, tiledPoint.y - bound));
-                    // Tiled in upper left quadrant.
-                    float dist2 = distance(targetPoint, float2(tiledPoint.x, tiledPoint.y - bound));
-                    // Tiled in lower right quadrant.
-                    float dist3 = distance(targetPoint, float2(tiledPoint.x - bound, tiledPoint.y));
-                    dist = min(dist1,  min(dist2, dist3));
-                } else if (!targetAboveMiddle && targetRightOfMiddle) {
-                    // Target is in lower right quadrant.
-                    // Tiled in upper right quadrant.
-                    float dist1 = distance(targetPoint, float2(tiledPoint.x, tiledPoint.y - bound));
-                    // Tiled in upper left quadrant.
-                    float dist2 = distance(targetPoint, float2(tiledPoint.x + bound, tiledPoint.y - bound));
-                    // Tiled in lower left quadrant.
-                    float dist3 = distance(targetPoint, float2(tiledPoint.x + bound, tiledPoint.y));
-                    dist = min(dist1,  min(dist2, dist3));
-                }
-
-                return dist;
-            }
-
             float4 frag (v2f i) : SV_Target
             {
                 float4 col = tex2D(_MainTex, i.uv);
+                float noise = (tex2D(_NoiseTex, i.uv).x - 0.5) * 2 * 0.2;
 
                 float minDistance = 9999999; // Arbitrary very large number.
 
                 for (int j = 0; j < _ParticleCount; ++j) {
-                    float2 particlePosition = _Particles[j].xy * _Scale;
+                    float2 particlePosition = _Particles[j].xy;
                     float2 rasterPosition = i.uv * _Size;
                     float d = distance(rasterPosition, particlePosition);
                     float dPrime = findMinUntiledDistance(particlePosition, rasterPosition, _Size);
@@ -112,11 +69,26 @@ Shader "Hidden/Utility"
                     }
                 }
                 
-                if (minDistance < _MaxDistance * _Scale) {
-                    return _ClusterColor * minDistance / _Scale;
-                } else {
-                    return col;
+                float distanceParameter = minDistance / _MaxDistance;
+
+                if (distanceParameter <= 1 - abs(noise)) {
+                    distanceParameter += noise;
+                    float threshold = 0.05;
+                    float maxSurround = max(distanceParameter, threshold);
+                    float invSurround = 1 - maxSurround;
+                    float4 surroundColor = lerp(float4(0, 0, 0, 1), _ClusterColor, invSurround);
+
+                    float centerCell = smoothMin(maxSurround, threshold, 0.3) * 25;
+                    float3 centerColorHSV = rgb2hsv(_ClusterColor.rgb);
+                    centerColorHSV = float3(centerColorHSV.r, centerColorHSV.g * 0.5, centerColorHSV.b * 0.5);
+                    float4 centerBaseColor = float4(hsv2rgb(centerColorHSV).rgb, 1.0);
+                    float4 centerColor = lerp(centerBaseColor, float4(0, 0, 0, 1), centerCell);
+
+                    float invCenterCell = 1 - centerCell;
+                    col = blendColors(blendMult(surroundColor, centerColor, invCenterCell), col);
                 }
+
+                return col;
             }
             ENDCG
         }
@@ -130,6 +102,7 @@ Shader "Hidden/Utility"
             #pragma fragment frag
 
             #include "UnityCG.cginc"
+            #include "Helpers.cginc"
 
             struct appdata
             {
@@ -149,53 +122,6 @@ Shader "Hidden/Utility"
                 o.vertex = UnityObjectToClipPos(v.vertex);
                 o.uv = v.uv;
                 return o;
-            }
-
-            float4 getNeighborCoords(float invSize, float2 uv) {
-                float leftX = uv.x - 1 * invSize;
-                float upY = uv.y + 1 * invSize;
-                float rightX = uv.x + 1 * invSize;
-                float downY = uv.y - 1 * invSize;
-
-                return float4(leftX, upY, rightX, downY);
-            }
-
-            float4x4 getNeighborsCross(sampler2D tex, float invSize, float2 uv) {
-                float4 neighborCoords = getNeighborCoords(invSize, uv);
-
-                float4 neighborL = tex2D(tex, float2(neighborCoords.x, uv.y));
-                float4 neighborT = tex2D(tex, float2(uv.x, neighborCoords.y));
-                float4 neighborR = tex2D(tex, float2(neighborCoords.z, uv.y));
-                float4 neighborB = tex2D(tex, float2(uv.x, neighborCoords.w));
-
-                float4x4 result;
-                result[0] = neighborL;
-                result[1] = neighborT;
-                result[2] = neighborR;
-                result[3] = neighborB;
-
-                return result;
-            }
-
-            float4x4 getNeighborsX(sampler2D tex, float invSize, float2 uv) {
-                float4 neighborCoords = getNeighborCoords(invSize, uv);
-                
-                float4 neighborUL = tex2D(tex, float2(neighborCoords.x, neighborCoords.y));
-                float4 neighborUR = tex2D(tex, float2(neighborCoords.z, neighborCoords.y));
-                float4 neighborDR = tex2D(tex, float2(neighborCoords.z, neighborCoords.w));
-                float4 neighborDL = tex2D(tex, float2(neighborCoords.x, neighborCoords.w));
-
-                float4x4 result;
-                result[0] = neighborUL;
-                result[1] = neighborUR;
-                result[2] = neighborDR;
-                result[3] = neighborDL;
-
-                return result;
-            }
-
-            float4 blendColors(float4 source, float4 destination) {
-                return source * source.a + destination * (1 - source.a);
             }
 
             sampler2D _MainTex;
