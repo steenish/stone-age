@@ -137,8 +137,9 @@ namespace StoneAge {
                     }
 
                     // Perform lichen growth.
-                    for (int i = 0; i < lichenClusters.Count; ++i) {
-                        LichenGrowth.LichenGrowthEvent(lichenClusters, i, size, lichenParameters, layers);
+                    List<LichenGrowth.Cluster> dailyClusters = lichenClusters.OrderBy(x => Random.value).Take(lichenParameters.maxClustersPerDay).ToList();
+                    for (int i = 0; i < dailyClusters.Count; ++i) {
+                        LichenGrowth.LichenGrowthEvent(dailyClusters[i], size, lichenParameters, layers);
                     }
 
                     // Spawn new lichen seeds.

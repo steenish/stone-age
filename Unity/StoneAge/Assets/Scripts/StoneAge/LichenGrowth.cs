@@ -18,7 +18,7 @@ namespace StoneAge {
                 particles = new List<LichenParticle> {
                     source
                 };
-                bounds = new Bounds(source.position, Vector3.one * source.radius);
+                bounds = new Bounds(source.position, Vector3.one * parameters.particleRadius);
                 species = parameters.species[Random.Range(0, parameters.species.Length)];
             }
         }
@@ -53,6 +53,8 @@ namespace StoneAge {
             public float noiseScale = 100.0f;
             [Range(0.01f, 2.0f)]
             public float lichenHeightScale = 0.2f;
+            [Range(1, 100)]
+            public int maxClustersPerDay = 10;
             public Species[] species;
             public AnimationCurve directLightSensitivity;
             public AnimationCurve indirectLightSensitivity;
@@ -61,18 +63,16 @@ namespace StoneAge {
 
         public class LichenParticle {
             public Vector2 position { get; set; }
-            public float radius { get; private set; }
-            public int age { get; set; } = 0;
 
             public LichenParticle(Vector2 position, float radius) {
                 this.position = position;
-                this.radius = radius;
             }
         }
 
         [System.Serializable]
         public class Species {
             public Color color;
+            public float weight;
         }
 
         private static float CalculateEnvironmentalInfluence(LichenParameters parameters, float height) {
@@ -100,26 +100,42 @@ namespace StoneAge {
             // Sort to avoid capping position array size.
             clusters.Sort((c1, c2) => c2.particles.Count.CompareTo(c1.particles.Count));
 
+            int arrayCap = 1023;
             for (int i = 0; i < clusters.Count; ++i) {
                 List<LichenParticle> particles = clusters[i].particles;
-                Vector4[] particlePositions = new Vector4[particles.Count];
-                for (int j = 0; j < particles.Count; ++j) {
-                    particlePositions[j] = Height.TilePosition(particles[j].position * parameters.scale, size);
+                int numArrays = 1 + particles.Count / arrayCap;
+                Vector4[][] particlePositions = new Vector4[numArrays][];
+                for (int j = 0; j < numArrays; ++j) {
+                    if (j == numArrays - 1) {
+                        particlePositions[j] = new Vector4[particles.Count - (numArrays - 1) * arrayCap];
+                    } else {
+                        particlePositions[j] = new Vector4[arrayCap];
+                    }
+
+                    for (int k = 0; k < particlePositions[j].Length; ++k) {
+                        particlePositions[j][k] = Height.TilePosition(particles[j * arrayCap + k].position * parameters.scale, size);
+                    }
                 }
+                
                 Color clusterColor = clusters[i].species.color;
-
-                utilityMaterial.SetInt("_ParticleCount", particles.Count);
                 utilityMaterial.SetInt("_Size", size);
-                utilityMaterial.SetVectorArray("_Particles", particlePositions);
                 utilityMaterial.SetFloat("_MaxDistance", 2.0f * parameters.particleRadius * parameters.scale);
-                utilityMaterial.SetColor("_ClusterColor", clusterColor);
 
-                Graphics.Blit(colorResult, dummy, utilityMaterial, 0); // Voronoi pass.
-                Graphics.Blit(dummy, colorResult);
+                for (int j = 0; j < numArrays; ++j) {
+                    if (particlePositions[j].Length == 0) {
+                        continue;
+                    }
 
-                utilityMaterial.SetColor("_ClusterColor", Color.white);
-                Graphics.Blit(heightResult, dummy, utilityMaterial, 0); // Height pass.
-                Graphics.Blit(dummy, heightResult);
+                    utilityMaterial.SetColor("_ClusterColor", clusterColor);
+                    utilityMaterial.SetInt("_ParticleCount", particlePositions[j].Length);
+                    utilityMaterial.SetVectorArray("_Particles", particlePositions[j]);
+                    Graphics.Blit(colorResult, dummy, utilityMaterial, 0); // Voronoi pass.
+                    Graphics.Blit(dummy, colorResult);
+
+                    utilityMaterial.SetColor("_ClusterColor", Color.white);
+                    Graphics.Blit(heightResult, dummy, utilityMaterial, 0); // Height pass.
+                    Graphics.Blit(dummy, heightResult);
+                }
             }
 
             Texture2D[] finalResults = new Texture2D[3];
@@ -148,19 +164,13 @@ namespace StoneAge {
             return numNeighbors;
         }
 
-        public static void LichenGrowthEvent(List<Cluster> clusters, int clusterIndex, int size, LichenParameters parameters, float[,,] layers) {
+        public static void LichenGrowthEvent(Cluster sourceCluster, int size, LichenParameters parameters, float[,,] layers) {
             size = (int) (size / parameters.scale);
-            Cluster sourceCluster = clusters[clusterIndex];
             int numParticles = sourceCluster.particles.Count;
-            LichenParticle randomParticle = sourceCluster.particles[Random.Range(0, numParticles)];
+            LichenParticle randomParticle = sourceCluster.particles.ElementAt(Random.Range(0, numParticles));
             Vector2 direction = randomParticle == sourceCluster.source ? Random.insideUnitCircle.normalized : (randomParticle.position - sourceCluster.source.position).normalized;
             Vector2 newPosition = randomParticle.position + direction * (2 * parameters.particleRadius + parameters.spawnEpsilon);
             LichenParticle particle = new LichenParticle(newPosition, parameters.particleRadius);
-
-            // Update ages.
-            for (int i = 0; i < sourceCluster.particles.Count; ++i) {
-                sourceCluster.particles[i].age += 1;
-            }
 
             bool resolved = false;
 
@@ -191,24 +201,6 @@ namespace StoneAge {
                     }
                 }
 
-                // Check collision with other clusters.
-                if (!resolved) {
-                    Vector2 tiledPosition = Height.TilePosition(particle.position, size);
-                    for (int i = 0; i < clusters.Count && !resolved; ++i) {
-                        Cluster cluster = clusters[i];
-                        if (cluster != sourceCluster && cluster.bounds.Contains(particle.position)) {
-                            List<LichenParticle> particles = cluster.particles;
-                            for (int j = 0; j < particles.Count; ++j) {
-                                if (CheckCollision(tiledPosition, Height.TilePosition(particles[j].position, size), parameters.particleRadius)) {
-                                    // Particles collided, discard particle.
-                                    resolved = true;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                }
-
                 // Move particle.
                 if (!resolved) {
                     particle.position += Random.insideUnitCircle.normalized * parameters.stepDistance;
@@ -218,30 +210,8 @@ namespace StoneAge {
 
         public static void SpawnCluster(ref List<Cluster> clusters, int size, LichenParameters parameters) {
             size = (int) (size / parameters.scale);
-            bool spawned = false;
-            
-            for (int i = 0; i < 100 && !spawned; ++i) {
-                Vector2 position = new Vector2(Random.Range(0.0f, size), Random.Range(0.0f, size));
-                bool collided = false;
-
-                for (int j = 0; j < clusters.Count && !collided; ++j) {
-                    Cluster cluster = clusters[j];
-                    if (cluster.bounds.Contains(position)) {
-                        List<LichenParticle> particles = cluster.particles;
-                        for (int k = 0; k < particles.Count; ++k) {
-                            if (CheckCollision(position, particles[k].position, parameters.particleRadius)) {
-                                collided = true;
-                                break;
-                            }
-                        }
-                    }
-                }
-
-                if (!collided) {
-                    clusters.Add(new Cluster(position, parameters));
-                    break;
-                }
-            }
+            Vector2 position = new Vector2(Random.Range(0.0f, size), Random.Range(0.0f, size));
+            clusters.Add(new Cluster(position, parameters));
         }
     }
 }

@@ -45,11 +45,11 @@ Shader "Hidden/Utility"
 
             sampler2D _MainTex;
             sampler2D _NoiseTex;
-            int _ParticleCount = 0;
-            int _Size = 2048;
+            int _ParticleCount;
+            int _Size;
             float4 _Particles[2048];
-            float _MaxDistance = 2;
-            float4 _ClusterColor = float4(1,1,1,1);
+            float _MaxDistance;
+            float4 _ClusterColor;
 
             float4 frag (v2f i) : SV_Target
             {
