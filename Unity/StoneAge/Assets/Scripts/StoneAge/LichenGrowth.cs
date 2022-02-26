@@ -8,18 +8,18 @@ namespace StoneAge {
     public class LichenGrowth {
 
         public class Cluster {
-            public LichenParticle source { get; private set; }
-            public List<LichenParticle> particles { get; private set; }
+            public Vector2 source { get; private set; }
+            public List<Vector2> particles { get; private set; }
             public Bounds bounds { get; private set; }
             public Species species { get; private set; }
 
             public Cluster(Vector2 sourcePosition, LichenParameters parameters) {
-                source = new LichenParticle(sourcePosition, parameters.particleRadius);
-                particles = new List<LichenParticle> {
+                source = sourcePosition;
+                particles = new List<Vector2> {
                     source
                 };
-                bounds = new Bounds(source.position, Vector3.one * parameters.particleRadius);
-                species = parameters.species[Random.Range(0, parameters.species.Length)];
+                bounds = new Bounds(source, Vector3.one * parameters.particleRadius);
+                species = FindSpecies(parameters.species);
             }
         }
 
@@ -61,18 +61,10 @@ namespace StoneAge {
             public AnimationCurve moistureSensitivity;
         }
 
-        public class LichenParticle {
-            public Vector2 position { get; set; }
-
-            public LichenParticle(Vector2 position, float radius) {
-                this.position = position;
-            }
-        }
-
         [System.Serializable]
         public class Species {
             public Color color;
-            public float weight;
+            public int weight;
         }
 
         private static float CalculateEnvironmentalInfluence(LichenParameters parameters, float height) {
@@ -102,7 +94,7 @@ namespace StoneAge {
 
             int arrayCap = 1023;
             for (int i = 0; i < clusters.Count; ++i) {
-                List<LichenParticle> particles = clusters[i].particles;
+                List<Vector2> particles = clusters[i].particles;
                 int numArrays = 1 + particles.Count / arrayCap;
                 Vector4[][] particlePositions = new Vector4[numArrays][];
                 for (int j = 0; j < numArrays; ++j) {
@@ -113,7 +105,7 @@ namespace StoneAge {
                     }
 
                     for (int k = 0; k < particlePositions[j].Length; ++k) {
-                        particlePositions[j][k] = Height.TilePosition(particles[j * arrayCap + k].position * parameters.scale, size);
+                        particlePositions[j][k] = Height.TilePosition(particles[j * arrayCap + k] * parameters.scale, size);
                     }
                 }
                 
@@ -129,7 +121,7 @@ namespace StoneAge {
                     utilityMaterial.SetColor("_ClusterColor", clusterColor);
                     utilityMaterial.SetInt("_ParticleCount", particlePositions[j].Length);
                     utilityMaterial.SetVectorArray("_Particles", particlePositions[j]);
-                    Graphics.Blit(colorResult, dummy, utilityMaterial, 0); // Voronoi pass.
+                    Graphics.Blit(colorResult, dummy, utilityMaterial, 0); // Color pass.
                     Graphics.Blit(dummy, colorResult);
 
                     utilityMaterial.SetColor("_ClusterColor", Color.white);
@@ -151,12 +143,37 @@ namespace StoneAge {
             return finalResults;
         }
 
-        private static int FindNeighbors(List<LichenParticle> particles, LichenParticle particle, float radius) {
+        private static Species FindSpecies(Species[] speciesList) {
+            int numWeights = speciesList.Length;
+            int[] cumulativeWeightSum = new int[numWeights]; ;
+
+            int currentSum = 0;
+            for (int i = 0; i < numWeights; ++i) {
+                currentSum += speciesList[i].weight;
+                cumulativeWeightSum[i] = currentSum;
+            }
+
+            int target = Random.Range(cumulativeWeightSum[0], cumulativeWeightSum[numWeights - 1] + 1);
+
+            int beginning = 0;
+            int end = numWeights;
+            while (end - beginning > 1) {
+                int mid = (end + beginning) / 2;
+                if (cumulativeWeightSum[mid] <= target) {
+                    beginning = mid;
+                } else {
+                    end = mid;
+                }
+            }
+            return speciesList[beginning];
+        }
+
+        private static int FindNeighbors(List<Vector2> particles, Vector2 particle, float radius) {
             int numNeighbors = 0;
 
             for (int i = 0; i < particles.Count; ++i) {
-                LichenParticle otherParticle = particles[i];
-                if (particle != otherParticle && Vector2.Distance(particle.position, otherParticle.position) <= radius) {
+                Vector2 otherParticle = particles[i];
+                if (particle != otherParticle && Vector2.Distance(particle, otherParticle) <= radius) {
                     numNeighbors++;
                 }
             }
@@ -167,33 +184,32 @@ namespace StoneAge {
         public static void LichenGrowthEvent(Cluster sourceCluster, int size, LichenParameters parameters, float[,,] layers) {
             size = (int) (size / parameters.scale);
             int numParticles = sourceCluster.particles.Count;
-            LichenParticle randomParticle = sourceCluster.particles.ElementAt(Random.Range(0, numParticles));
-            Vector2 direction = randomParticle == sourceCluster.source ? Random.insideUnitCircle.normalized : (randomParticle.position - sourceCluster.source.position).normalized;
-            Vector2 newPosition = randomParticle.position + direction * (2 * parameters.particleRadius + parameters.spawnEpsilon);
-            LichenParticle particle = new LichenParticle(newPosition, parameters.particleRadius);
+            Vector2 randomParticle = sourceCluster.particles.ElementAt(Random.Range(0, numParticles));
+            Vector2 direction = randomParticle == sourceCluster.source ? Random.insideUnitCircle.normalized : (randomParticle - sourceCluster.source).normalized;
+            Vector2 particle = randomParticle + direction * (2 * parameters.particleRadius + parameters.spawnEpsilon);
 
             bool resolved = false;
 
             for (int step = 0; step < parameters.maxPath && !resolved; ++step) {
-                Vector2 tiledHeightPosition = Height.TilePosition(particle.position, size) * parameters.scale;
+                Vector2 tiledHeightPosition = Height.TilePosition(particle, size) * parameters.scale;
                 float height = Height.GetAggregatedValue((int) tiledHeightPosition.x, (int) tiledHeightPosition.y, layers);
                 float environmentInfluence = CalculateEnvironmentalInfluence(parameters, height);
 
                 // Check if particle is within the death radius.
-                if (Vector2.Distance(randomParticle.position, particle.position) < parameters.deathRadius) {
+                if (Vector2.Distance(randomParticle, particle) < parameters.deathRadius) {
                     // Check collision with the current cluster.
                     for (int i = 0; i < sourceCluster.particles.Count; ++i) {
-                        LichenParticle otherParticle = sourceCluster.particles[i];
-                        if (otherParticle != particle && CheckCollision(particle.position, otherParticle.position, parameters.particleRadius)) {
+                        Vector2 otherParticle = sourceCluster.particles[i];
+                        if (otherParticle != particle && CheckCollision(particle, otherParticle, parameters.particleRadius)) {
                             int numNeighbors = FindNeighbors(sourceCluster.particles, particle, parameters.rho);
                             float theoreticalAggregation = parameters.alpha + (1 - parameters.alpha) * Mathf.Exp(-parameters.sigma * (numNeighbors - parameters.tau));
                             float aggregationProbability = environmentInfluence * theoreticalAggregation;
                             if (Random.value < aggregationProbability) {
-                                Vector2 offset = 2.0f * parameters.particleRadius * (particle.position - otherParticle.position).normalized;
-                                particle.position = otherParticle.position + offset;
+                                Vector2 offset = 2.0f * parameters.particleRadius * (particle - otherParticle).normalized;
+                                particle = otherParticle + offset;
                                 sourceCluster.particles.Add(particle);
-                                Vector2 encapsulationOffset = (particle.position - sourceCluster.source.position).normalized * parameters.particleRadius;
-                                sourceCluster.bounds.Encapsulate(particle.position + encapsulationOffset);
+                                Vector2 encapsulationOffset = (particle - sourceCluster.source).normalized * parameters.particleRadius;
+                                sourceCluster.bounds.Encapsulate(particle + encapsulationOffset);
                             }
                             resolved = true;
                             break;
@@ -203,7 +219,7 @@ namespace StoneAge {
 
                 // Move particle.
                 if (!resolved) {
-                    particle.position += Random.insideUnitCircle.normalized * parameters.stepDistance;
+                    particle += Random.insideUnitCircle.normalized * parameters.stepDistance;
                 }
             }
         }
