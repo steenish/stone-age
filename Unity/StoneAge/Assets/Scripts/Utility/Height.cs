@@ -3,6 +3,16 @@ using UnityEngine;
 namespace Utility {
     public class Height {
 
+        [System.Serializable]
+        public class RoughnessParameters {
+            [Range(-2.0f, 2.0f)]
+            public float erosionModifier = -0.5f;
+            [Range(-2.0f, 2.0f)]
+            public float sedimentModifier = 0.5f;
+            [Range(-2.0f, 2.0f)]
+            public float lichenModifier = 1.0f;
+        }
+
         public static float[,] FinalizeHeight(ref float[,,] layers) {
             int size = layers.GetLength(0);
             int numLayers = layers.GetLength(2);
@@ -17,9 +27,23 @@ namespace Utility {
                 }
             }
 
-            NormalizeHeight(ref aggregateHeight);
+            Normalize(ref aggregateHeight);
 
             return aggregateHeight;
+        }
+
+        public static void GenerateRoughness(ref float[,] roughnessBuffer, float[,] erosionBuffer, float[,] sedimentBuffer, float[,] lichenBuffer, RoughnessParameters parameters) {
+            int size = roughnessBuffer.GetLength(0);
+            
+            for (int y = 0; y < size; ++y) {
+                for (int x = 0; x < size; ++x) {
+                    float erosionContribution = parameters.erosionModifier * (erosionBuffer[x, y] - 0.5f) * 2.0f;
+                    float sedimentContribution = parameters.sedimentModifier * (sedimentBuffer[x, y] - 0.5f) * 2.0f;
+                    float lichenContribution = parameters.lichenModifier * (lichenBuffer[x, y] > 0.0f ? 1 : 0);
+
+                    roughnessBuffer[x, y] += erosionContribution + sedimentContribution + lichenContribution;
+                }
+            }
         }
 
         public static Vector2 GetInterpolatedGradient(Vector2 position, float[,,] values) {
@@ -46,8 +70,8 @@ namespace Utility {
             float v = position.y - y;
 
             // Ensure positive coordinates, then tile the whole coordinates as well as the incremented coordinates.
-            x = TileCoordinate(x, size);
-            y = TileCoordinate(y, size);
+            x = Conversion.TileCoordinate(x, size);
+            y = Conversion.TileCoordinate(y, size);
             int bumpedX = (x + 1) % size;
             int bumpedY = (y + 1) % size;
 
@@ -71,7 +95,7 @@ namespace Utility {
             return sum;
         }
 
-        public static void NormalizeHeight(ref float[,] heightBuffer) {
+        public static void Normalize(ref float[,] heightBuffer) {
             int size = heightBuffer.GetLength(0);
 
             // Find min and max height.
@@ -116,42 +140,6 @@ namespace Utility {
                     layers[x, y, layerIndex] = (layers[x, y, layerIndex] - minHeight) * normalizingDenominator;
                 }
             }
-        }
-
-        public static float TileCoordinate(float coordinate, float bound) {
-            float tiledCoordinate = coordinate;
-
-            // Ensure tiledCoordinate is positve by adding the right amount of bounds to reach positive.
-            if (tiledCoordinate < 0) {
-                tiledCoordinate += bound * (1 + (Mathf.Abs(coordinate) / bound));
-            }
-
-            // Tile tiledCoordinate to within bound.
-            if (tiledCoordinate >= bound) {
-                tiledCoordinate %= bound;
-            }
-
-            return tiledCoordinate;
-        }
-
-        public static int TileCoordinate(int coordinate, int bound) {
-            int tiledCoordinate = coordinate;
-
-            // Ensure tiledCoordinate is positve by adding the right amount of bounds to reach positive.
-            if (tiledCoordinate < 0) {
-                tiledCoordinate += bound * (1 + (Mathf.Abs(coordinate) / bound));
-            }
-
-            // Tile tiledCoordinate to within bound.
-            if (tiledCoordinate >= bound) {
-                tiledCoordinate %= bound;
-            }
-
-            return tiledCoordinate;
-        }
-
-        public static Vector2 TilePosition(Vector2 position, int bound) {
-            return new Vector2(TileCoordinate(position.x, bound), TileCoordinate(position.y, bound));
         }
     }
 }

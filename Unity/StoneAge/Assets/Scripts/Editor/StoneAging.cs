@@ -26,6 +26,8 @@ namespace StoneAge {
         private Texture2D albedoMap = null;
         [SerializeField]
         private Texture2D heightMap = null;
+        [SerializeField]
+        private Texture2D roughnessMap = null;
 
         [SerializeField]
         private int agingYears = 100;
@@ -46,14 +48,17 @@ namespace StoneAge {
         private LichenGrowth.LichenParameters lichenParameters;
 
         [SerializeField]
+        private Height.RoughnessParameters roughnessParameters;
+
+        [SerializeField]
         private bool saveToDisk = false;
         [SerializeField]
         private System.Environment.SpecialFolder saveLocation;
         [SerializeField]
         private string folderName = "StoneAge";
 
-        private static int debugTextureFlags = 0;
-        private static readonly string[] debugTextureOptions = new string[] { "Erosion buffer", "Sediment buffer", "Visit buffer", "Lichen buffer", "Lichen height buffer" };
+        private static int additionalTextureFlags = 0;
+        private static readonly string[] additionalTextureOptions = new string[] { "Erosion buffer", "Sediment buffer", "Visit buffer", "Lichen buffer", "Lichen height buffer" };
 
         private Vector2 scrollPos;
 
@@ -61,6 +66,7 @@ namespace StoneAge {
         private SerializedProperty propLoggingLevel;
         private SerializedProperty propAlbedoMap;
         private SerializedProperty propHeightMap;
+        private SerializedProperty propRoughnessMap;
         private SerializedProperty propAgingYears;
         private SerializedProperty propEffectiveMaxAge;
         private SerializedProperty propSeed;
@@ -68,6 +74,7 @@ namespace StoneAge {
         private SerializedProperty propColorationParameters;
         private SerializedProperty propErosionParameters;
         private SerializedProperty propLichenParameters;
+        private SerializedProperty propRoughnessParameters;
         private SerializedProperty propSaveToDisk;
         private SerializedProperty propSaveLocation;
         private SerializedProperty propFolderName;
@@ -80,6 +87,7 @@ namespace StoneAge {
             propLoggingLevel = serializedObject.FindProperty("loggingLevel");
             propAlbedoMap = serializedObject.FindProperty("albedoMap");
             propHeightMap = serializedObject.FindProperty("heightMap");
+            propRoughnessMap = serializedObject.FindProperty("roughnessMap");
             propAgingYears = serializedObject.FindProperty("agingYears");
             propEffectiveMaxAge = serializedObject.FindProperty("effectiveMaxAge");
             propSeed = serializedObject.FindProperty("seed");
@@ -87,6 +95,7 @@ namespace StoneAge {
             propColorationParameters = serializedObject.FindProperty("colorationParameters");
             propErosionParameters = serializedObject.FindProperty("erosionParameters");
             propLichenParameters = serializedObject.FindProperty("lichenParameters");
+            propRoughnessParameters = serializedObject.FindProperty("roughnessParameters");
             propSaveToDisk = serializedObject.FindProperty("saveToDisk");
             propSaveLocation = serializedObject.FindProperty("saveLocation");
             propFolderName = serializedObject.FindProperty("folderName");
@@ -102,6 +111,7 @@ namespace StoneAge {
             EditorGUILayout.LabelField("Input textures", EditorStyles.boldLabel);
             EditorGUILayout.PropertyField(propAlbedoMap);
             EditorGUILayout.PropertyField(propHeightMap);
+            EditorGUILayout.PropertyField(propRoughnessMap);
 
             EditorGUILayout.Space();
             EditorGUILayout.LabelField("General parameters", EditorStyles.boldLabel);
@@ -110,14 +120,12 @@ namespace StoneAge {
             EditorGUILayout.PropertyField(propSeed);
 
             EditorGUILayout.Space();
-            EditorGUILayout.LabelField("Erosion settings", EditorStyles.boldLabel);
+            EditorGUILayout.LabelField("Simulation parameters", EditorStyles.boldLabel);
             EditorGUILayout.PropertyField(propRainRate);
             EditorGUILayout.PropertyField(propColorationParameters);
             EditorGUILayout.PropertyField(propErosionParameters);
-
-            EditorGUILayout.Space();
-            EditorGUILayout.LabelField("Lichen settings", EditorStyles.boldLabel);
             EditorGUILayout.PropertyField(propLichenParameters);
+            EditorGUILayout.PropertyField(propRoughnessParameters);
 
             EditorGUILayout.Space();
             EditorGUILayout.LabelField("Export settings", EditorStyles.boldLabel);
@@ -126,7 +134,7 @@ namespace StoneAge {
             if (propSaveToDisk.boolValue) {
                 EditorGUILayout.PropertyField(propSaveLocation);
                 EditorGUILayout.PropertyField(propFolderName);
-                debugTextureFlags = EditorGUILayout.MaskField("Save debug textures", debugTextureFlags, debugTextureOptions);
+                additionalTextureFlags = EditorGUILayout.MaskField("Save additional textures", additionalTextureFlags, additionalTextureOptions);
             }
 
             serializedObject.ApplyModifiedProperties();
@@ -159,7 +167,9 @@ namespace StoneAge {
                 return;
             }
 
-            if (albedoMap.width != albedoMap.height || albedoMap.width != heightMap.width || albedoMap.height != heightMap.height) {
+            bool roughnessMapNull = roughnessMap == null;
+
+            if (albedoMap.width != albedoMap.height || albedoMap.width != heightMap.width || albedoMap.height != heightMap.height || (!roughnessMapNull && (roughnessMap.height != roughnessMap.width || roughnessMap.width != albedoMap.width))) {
                 Debug.LogError("Maps are not the same size or not square.");
                 return;
             }
@@ -187,6 +197,19 @@ namespace StoneAge {
             float[,,] layers = new float[size, size, 2];
             float[,] originalRockHeight = Conversion.CreateFloatBuffer(heightMap);
             Conversion.FillBufferLayer(originalRockHeight, ref layers, (int) Erosion.LayerName.Rock);
+
+            float[,] roughnessBuffer = null;
+            if (!roughnessMapNull) {
+                roughnessBuffer = Conversion.CreateFloatBuffer(roughnessMap);
+            } else {
+                roughnessBuffer = new float[size, size];
+
+                for (int y = 0; y < size; ++y) {
+                    for (int x = 0; x < size; ++x) {
+                        roughnessBuffer[x, y] = 0.5f;
+                    }
+                }
+            }
 
             List<LichenGrowth.Cluster> lichenClusters = new List<LichenGrowth.Cluster>();
             for (int i = 0; i < lichenParameters.initialSeeds; ++i) {
@@ -249,7 +272,7 @@ namespace StoneAge {
             System.DateTime finalizationStart = System.DateTime.Now;
 
             float[,] erosionBuffer = Conversion.DifferenceMap(originalRockHeight, Conversion.ExtractBufferLayer(layers, (int) Erosion.LayerName.Rock));
-            Height.NormalizeHeight(ref erosionBuffer);
+            Height.Normalize(ref erosionBuffer);
 
             float[,] heightBuffer = Height.FinalizeHeight(ref layers);
 
@@ -260,16 +283,19 @@ namespace StoneAge {
             Coloration.ColorErodedAreas(ref albedoBuffer, Textures.GaussianBlur(erosionBuffer, colorationParameters.blurRadius), colorationParameters.erosionDarkening, agingYears, effectiveMaxAge);
 
             float[,] sedimentBuffer = Conversion.ExtractBufferLayer(layers, (int) Erosion.LayerName.Sediment);
-            Height.NormalizeHeight(ref sedimentBuffer);
+            Height.Normalize(ref sedimentBuffer);
             Coloration.OverlaySediment(ref albedoBuffer, sedimentBuffer, colorationParameters.sedimentColor, colorationParameters.sedimentOpacityModifier, sedimentNoise);
 
-            Height.NormalizeHeight(ref visits);
+            Height.Normalize(ref visits);
 
             Texture2D[] lichenResults = LichenGrowth.CreateLichenTexture(lichenClusters, size, Conversion.CreateTexture(size, albedoBuffer), utilityShader, lichenParameters);
             float[,] lichenHeight = Conversion.CreateFloatBuffer(lichenResults[1]);
             lichenHeight = Conversion.ScalarMultMap(lichenHeight, lichenParameters.lichenHeightScale);
             heightBuffer = Conversion.SumMap(heightBuffer, lichenHeight);
-            Height.NormalizeHeight(ref heightBuffer);
+            Height.Normalize(ref heightBuffer);
+
+            Height.GenerateRoughness(ref roughnessBuffer, erosionBuffer, sedimentBuffer, lichenHeight, roughnessParameters);
+            Height.Normalize(ref roughnessBuffer);
 
             LogTime("Finalization done", finalizationStart);
 
@@ -285,24 +311,25 @@ namespace StoneAge {
                 System.IO.Directory.CreateDirectory(savePath);
                 Textures.SaveTextureAsPNG(lichenResults[0], savePath + "Albedo_Aged_" + agingYears + ".png");
                 Textures.SaveTextureAsPNG(Conversion.CreateTexture(size, heightBuffer), savePath + "Height_Aged_" + agingYears + ".png");
+                Textures.SaveTextureAsPNG(Conversion.CreateTexture(size, roughnessBuffer), savePath + "Roughness_Aged_" + agingYears + ".png");
 
-                if ((debugTextureFlags & (int) DebugTextures.ErosionBuffer) > 0) {
+                if ((additionalTextureFlags & (int) DebugTextures.ErosionBuffer) > 0) {
                     Textures.SaveTextureAsPNG(Conversion.CreateTexture(size, erosionBuffer), savePath + "Erosion_Buffer_" + agingYears + ".png");
                 }
 
-                if ((debugTextureFlags & (int) DebugTextures.SedimentBuffer) > 0) {
+                if ((additionalTextureFlags & (int) DebugTextures.SedimentBuffer) > 0) {
                     Textures.SaveTextureAsPNG(Conversion.CreateTexture(size, sedimentBuffer), savePath + "Sediment_Buffer_" + agingYears + ".png");
                 }
 
-                if ((debugTextureFlags & (int) DebugTextures.VisitBuffer) > 0) {
+                if ((additionalTextureFlags & (int) DebugTextures.VisitBuffer) > 0) {
                     Textures.SaveTextureAsPNG(Conversion.CreateTexture(size, visits), savePath + "Visit_Buffer_" + agingYears + ".png");
                 }
 
-                if ((debugTextureFlags & (int) DebugTextures.LichenBuffer) > 0) {
+                if ((additionalTextureFlags & (int) DebugTextures.LichenBuffer) > 0) {
                     Textures.SaveTextureAsPNG(lichenResults[2], savePath + "Lichen_Buffer_" + agingYears + ".png");
                 }
 
-                if ((debugTextureFlags & (int) DebugTextures.LichenHeightBuffer) > 0) {
+                if ((additionalTextureFlags & (int) DebugTextures.LichenHeightBuffer) > 0) {
                     Textures.SaveTextureAsPNG(lichenResults[1], savePath + "Lichen_Height_Buffer_" + agingYears + ".png");
                 }
 

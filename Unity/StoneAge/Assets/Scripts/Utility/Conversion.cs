@@ -146,5 +146,41 @@ namespace Utility {
         public static float[,] SumMap(float[,] leftHandSide, float[,] rightHandSide) {
             return BinaryArithmeticMap(leftHandSide, rightHandSide, (float lhs, float rhs) => lhs + rhs);
         }
+
+        public static float TileCoordinate(float coordinate, float bound) {
+            float tiledCoordinate = coordinate;
+
+            // Ensure tiledCoordinate is positve by adding the right amount of bounds to reach positive.
+            if (tiledCoordinate < 0) {
+                tiledCoordinate += bound * (1 + (Mathf.Abs(coordinate) / bound));
+            }
+
+            // Tile tiledCoordinate to within bound.
+            if (tiledCoordinate >= bound) {
+                tiledCoordinate %= bound;
+            }
+
+            return tiledCoordinate;
+        }
+
+        public static int TileCoordinate(int coordinate, int bound) {
+            int tiledCoordinate = coordinate;
+
+            // Ensure tiledCoordinate is positve by adding the right amount of bounds to reach positive.
+            if (tiledCoordinate < 0) {
+                tiledCoordinate += bound * (1 + (Mathf.Abs(coordinate) / bound));
+            }
+
+            // Tile tiledCoordinate to within bound.
+            if (tiledCoordinate >= bound) {
+                tiledCoordinate %= bound;
+            }
+
+            return tiledCoordinate;
+        }
+
+        public static Vector2 TilePosition(Vector2 position, int bound) {
+            return new Vector2(TileCoordinate(position.x, bound), TileCoordinate(position.y, bound));
+        }
     }
 }

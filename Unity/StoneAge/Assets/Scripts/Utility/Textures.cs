@@ -24,7 +24,7 @@ namespace Utility {
                     Color resultColor = Color.black;
 
                     for (int i = -radius; i < radius; ++i) {
-                        resultColor += filter[i + radius] * albedo[Height.TileCoordinate(x + i, size), y];
+                        resultColor += filter[i + radius] * albedo[Conversion.TileCoordinate(x + i, size), y];
                     }
 
                     resultColor.a = 1.0f;
@@ -38,7 +38,7 @@ namespace Utility {
                     Color resultColor = Color.black;
 
                     for (int i = -radius; i <= radius; ++i) {
-                        resultColor += filter[i + radius] * albedo[x, Height.TileCoordinate(y + i, size)];
+                        resultColor += filter[i + radius] * albedo[x, Conversion.TileCoordinate(y + i, size)];
                     }
 
                     resultColor.a = 1.0f;
@@ -60,7 +60,7 @@ namespace Utility {
                     float result = 0.0f;
 
                     for (int i = -radius; i < radius; ++i) {
-                        result += filter[i + radius] * values[Height.TileCoordinate(x + i, size), y];
+                        result += filter[i + radius] * values[Conversion.TileCoordinate(x + i, size), y];
                     }
 
                     values[x, y] = result;
@@ -73,7 +73,7 @@ namespace Utility {
                     float result = 0.0f;
 
                     for (int i = -radius; i <= radius; ++i) {
-                        result += filter[i + radius] * values[x, Height.TileCoordinate(y + i, size)];
+                        result += filter[i + radius] * values[x, Conversion.TileCoordinate(y + i, size)];
                     }
 
                     values[x, y] = result;
@@ -137,7 +137,7 @@ namespace Utility {
                 }
             }
 
-            Height.NormalizeHeight(ref result);
+            Height.Normalize(ref result);
 
             return result;
         }

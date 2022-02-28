@@ -60,10 +60,10 @@ namespace StoneAge {
             float v = position.y - flooredY;
 
             // Tile the whole coordinates.
-            flooredX = Height.TileCoordinate(flooredX, size);
-            flooredY = Height.TileCoordinate(flooredY, size);
-            int bumpedX = Height.TileCoordinate(flooredX + 1, size);
-            int bumpedY = Height.TileCoordinate(flooredY + 1, size);
+            flooredX = Conversion.TileCoordinate(flooredX, size);
+            flooredY = Conversion.TileCoordinate(flooredY, size);
+            int bumpedX = Conversion.TileCoordinate(flooredX + 1, size);
+            int bumpedY = Conversion.TileCoordinate(flooredY + 1, size);
 
             // Weights are reverse-linear interpolated based on u and v.
             float[,] weights = new float[2, 2];
@@ -105,8 +105,8 @@ namespace StoneAge {
                 float oldHeight = Height.GetInterpolatedHeight(drop.position, layers);
                 Vector2 oldPosition = drop.position;
                 drop.position = oldPosition + drop.direction;
-                int tiledX = Height.TileCoordinate((int) drop.position.x, visits.GetLength(0));
-                int tiledY = Height.TileCoordinate((int) drop.position.y, visits.GetLength(0));
+                int tiledX = Conversion.TileCoordinate((int) drop.position.x, visits.GetLength(0));
+                int tiledY = Conversion.TileCoordinate((int) drop.position.y, visits.GetLength(0));
                 visits[tiledX, tiledY] += 1;
                 float newHeight = Height.GetInterpolatedHeight(drop.position, layers);
                 float heightDifference = newHeight - oldHeight;
@@ -161,16 +161,16 @@ namespace StoneAge {
             float normalizationFactor = 1 / weightSum;
 
             // Tile the whole coordinates.
-            flooredX = Height.TileCoordinate(flooredX, size);
-            flooredY = Height.TileCoordinate(flooredY, size);
+            flooredX = Conversion.TileCoordinate(flooredX, size);
+            flooredY = Conversion.TileCoordinate(flooredY, size);
 
             float totalRemoved = 0.0f;
             // Second pass removes sediment.
             int numLayers = System.Enum.GetValues(typeof(LayerName)).Length;
             for (int y = flooredY - flooredRadius; y <= flooredY + flooredRadius + 1; ++y) {
-                int tiledY = Height.TileCoordinate(y, size);
+                int tiledY = Conversion.TileCoordinate(y, size);
                 for (int x = flooredX - flooredRadius; x <= flooredX + flooredRadius + 1; ++x) {
-                    int tiledX = Height.TileCoordinate(x, size);
+                    int tiledX = Conversion.TileCoordinate(x, size);
                     float removedHeight = Mathf.Max(0.0f, rawWeights[x - flooredX + flooredRadius, y - flooredY + flooredRadius] * normalizationFactor * amount);
                     for (int i = 0; i < numLayers; ++i) {
                         float removedHeightLayer = removedHeight * erosionFactors[i];

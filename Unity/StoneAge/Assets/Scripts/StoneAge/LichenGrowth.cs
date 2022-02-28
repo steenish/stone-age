@@ -1,4 +1,3 @@
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using Utility;
@@ -105,7 +104,7 @@ namespace StoneAge {
                     }
 
                     for (int k = 0; k < particlePositions[j].Length; ++k) {
-                        particlePositions[j][k] = Height.TilePosition(particles[j * arrayCap + k] * parameters.scale, size);
+                        particlePositions[j][k] = Conversion.TilePosition(particles[j * arrayCap + k] * parameters.scale, size);
                     }
                 }
                 
@@ -188,7 +187,7 @@ namespace StoneAge {
             bool resolved = false;
 
             for (int step = 0; step < parameters.maxPath && !resolved; ++step) {
-                Vector2 tiledHeightPosition = Height.TilePosition(particle, size) * parameters.scale;
+                Vector2 tiledHeightPosition = Conversion.TilePosition(particle, size) * parameters.scale;
                 float height = Height.GetAggregatedValue((int) tiledHeightPosition.x, (int) tiledHeightPosition.y, layers);
                 float environmentInfluence = CalculateEnvironmentalInfluence(parameters, height);
 
