@@ -78,7 +78,7 @@ namespace StoneAge {
             layers[bumpedX, bumpedY, (int) LayerName.Sediment] += weights[1, 1] * amount;
         }
 
-        public static int ErosionEvent(ref float[,,] layers, ErosionParameters parameters, ref float[,] visits) {
+        public static void ErosionEvent(ref float[,,] layers, ErosionParameters parameters, ref float[,] visits) {
             int size = layers.GetLength(0);
 
             Vector2 startPos = new Vector2(Random.Range(0, size), Random.Range(0, size));
@@ -86,17 +86,10 @@ namespace StoneAge {
 
             DropParticle drop = new DropParticle(startPos, startDir);
 
-            int numSteps = 0;
-
             for (int step = 0; step < parameters.maxPath; ++step) {
                 // Check breaking conditions.
                 if (drop.water <= 0) {
-                    numSteps = step;
                     break;
-                }
-
-                if (step == parameters.maxPath - 1) {
-                    numSteps = step;
                 }
 
                 // Update position and direction.
@@ -144,8 +137,6 @@ namespace StoneAge {
                 drop.water *= 1 - parameters.evaporation;
                 drop.water -= Mathf.Epsilon;
             }
-
-            return numSteps;
         }
 
         private static float PickUpSediment(Vector2 position, ref float[,,] layers, float radius, float amount, float[] erosionFactors) {

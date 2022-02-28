@@ -145,27 +145,24 @@ namespace StoneAge {
 
         private static Species FindSpecies(Species[] speciesList) {
             int numWeights = speciesList.Length;
-            int[] cumulativeWeightSum = new int[numWeights]; ;
+            int[] cumulativeWeightSum = new int[numWeights + 1];
+            cumulativeWeightSum[0] = 0;
 
             int currentSum = 0;
-            for (int i = 0; i < numWeights; ++i) {
-                currentSum += speciesList[i].weight;
+            for (int i = 1; i < numWeights + 1; ++i) {
+                currentSum += speciesList[i - 1].weight;
                 cumulativeWeightSum[i] = currentSum;
             }
 
-            int target = Random.Range(cumulativeWeightSum[0], cumulativeWeightSum[numWeights - 1] + 1);
-
-            int beginning = 0;
-            int end = numWeights;
-            while (end - beginning > 1) {
-                int mid = (end + beginning) / 2;
-                if (cumulativeWeightSum[mid] <= target) {
-                    beginning = mid;
-                } else {
-                    end = mid;
+            Species result = null;
+            int target = Random.Range(0, cumulativeWeightSum[numWeights]);
+            for (int i = 0; i < numWeights; ++i) {
+                if (cumulativeWeightSum[i] <= target && target < cumulativeWeightSum[i + 1]) {
+                    result = speciesList[i];
+                    break;
                 }
-            }
-            return speciesList[beginning];
+            }            
+            return result;
         }
 
         private static int FindNeighbors(List<Vector2> particles, Vector2 particle, float radius) {

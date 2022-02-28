@@ -12,15 +12,15 @@ namespace Utility {
             [Range(1.0f, 20.0f)]
             public float noiseScale = 5.0f;
             public Gradient sedimentColor; // 8F9394 to 464B4A
-            [Range(0.0f, 2.0f)]
+            [Range(0.0f, 1.0f)]
             public float sedimentOpacityModifier = 2.0f;
             public Color ironColor; // FF8700
-            [Range(0.0f, 2.0f)]
+            [Range(0.0f, 1.0f)]
             public float ironOpacityModifier = 0.6f;
             [Range(50, 300)]
             public float ironGranularity = 200.0f;
             public Color efflorescenceColor; // FFFFFF
-            [Range(0.0f, 2.0f)]
+            [Range(0.0f, 1.0f)]
             public float efflorescenceOpacityModifier = 0.6f;
             [Range(50, 300)]
             public float efflorescenceGranularity = 300.0f;
@@ -52,16 +52,6 @@ namespace Utility {
                     saturation *= 1 - erosionAmount;
                     value *= Mathf.Lerp(lowerValueBound, 1.0f, 1 - erosionAmount);
                     color[x, y] = Color.HSVToRGB(hue, saturation, value);
-                }
-            }
-        }
-
-        public static void OverlayLichens(ref Color[,] albedo, Color[,] lichen) {
-            int size = albedo.GetLength(0);
-
-            for (int y = 0; y < size; ++y) {
-                for (int x = 0; x < size; ++x) {
-                    albedo[x, y] = BlendColors(lichen[x, y], albedo[x, y]);
                 }
             }
         }

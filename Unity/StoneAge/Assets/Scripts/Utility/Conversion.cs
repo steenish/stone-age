@@ -4,12 +4,32 @@ using UnityEngine;
 namespace Utility {
     public class Conversion {
 
-        public static Color[,] CreateColorBuffer(Texture2D map) {
-            return CreateBuffer(map, (Color pixelColor) => pixelColor);
+        private static float[,] BinaryArithmeticMap(float[,] leftHandSide, float rightHandSide, Func<float, float, float> binaryArithmeticFunction) {
+            int size = leftHandSide.GetLength(0);
+
+            float[,] result = new float[size, size];
+
+            for (int y = 0; y < size; ++y) {
+                for (int x = 0; x < size; ++x) {
+                    result[x, y] = binaryArithmeticFunction(leftHandSide[x, y], rightHandSide);
+                }
+            }
+
+            return result;
         }
 
-        public static float[,] CreateFloatBuffer(Texture2D map) {
-            return CreateBuffer(map, (Color pixelColor) => pixelColor.r);
+        private static float[,] BinaryArithmeticMap(float[,] leftHandSide, float[,] rightHandSide, Func<float, float, float> binaryArithmeticFunction) {
+            int size = leftHandSide.GetLength(0);
+
+            float[,] result = new float[size, size];
+
+            for (int y = 0; y < size; ++y) {
+                for (int x = 0; x < size; ++x) {
+                    result[x, y] = binaryArithmeticFunction(leftHandSide[x, y], rightHandSide[x, y]);
+                }
+            }
+
+            return result;
         }
 
         private static T[,] CreateBuffer<T>(Texture2D map, Func<Color, T> valueExtractionFunction) {
@@ -24,6 +44,14 @@ namespace Utility {
             }
 
             return colors;
+        }
+
+        public static Color[,] CreateColorBuffer(Texture2D map) {
+            return CreateBuffer(map, (Color pixelColor) => pixelColor);
+        }
+
+        public static float[,] CreateFloatBuffer(Texture2D map) {
+            return CreateBuffer(map, (Color pixelColor) => pixelColor.r);
         }
 
         public static Texture2D CreateTexture(int size, Color[,] data, string textureName = "Texture") {
@@ -97,6 +125,10 @@ namespace Utility {
             FillBufferLayer(map, ref layers, layerIndex, (Color pixelColor) => pixelColor.r);
         }
 
+        public static float[,] ScalarMultMap(float[,] leftHandSide, float rightHandSide) {
+            return BinaryArithmeticMap(leftHandSide, rightHandSide, (float lhs, float rhs) => lhs * rhs);
+        }
+
         public static float Sum(float[,] buffer) {
             int size = buffer.GetLength(0);
 
@@ -113,38 +145,6 @@ namespace Utility {
 
         public static float[,] SumMap(float[,] leftHandSide, float[,] rightHandSide) {
             return BinaryArithmeticMap(leftHandSide, rightHandSide, (float lhs, float rhs) => lhs + rhs);
-        }
-
-        public static float[,] ScalarMultMap(float[,] leftHandSide, float rightHandSide) {
-            return BinaryArithmeticMap(leftHandSide, rightHandSide, (float lhs, float rhs) => lhs * rhs);
-        }
-
-        private static float[,] BinaryArithmeticMap(float[,] leftHandSide, float[,] rightHandSide, Func<float, float, float> binaryArithmeticFunction) {
-            int size = leftHandSide.GetLength(0);
-
-            float[,] result = new float[size, size];
-
-            for (int y = 0; y < size; ++y) {
-                for (int x = 0; x < size; ++x) {
-                    result[x, y] = binaryArithmeticFunction(leftHandSide[x, y], rightHandSide[x, y]);
-                }
-            }
-
-            return result;
-        }
-
-        private static float[,] BinaryArithmeticMap(float[,] leftHandSide, float rightHandSide, Func<float, float, float> binaryArithmeticFunction) {
-            int size = leftHandSide.GetLength(0);
-
-            float[,] result = new float[size, size];
-
-            for (int y = 0; y < size; ++y) {
-                for (int x = 0; x < size; ++x) {
-                    result[x, y] = binaryArithmeticFunction(leftHandSide[x, y], rightHandSide);
-                }
-            }
-
-            return result;
         }
     }
 }
