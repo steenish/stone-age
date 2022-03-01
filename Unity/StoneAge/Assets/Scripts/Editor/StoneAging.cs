@@ -1,14 +1,10 @@
 using System.Collections.Generic;
-using UnityEngine;
-using Utility;
 using System.Linq;
 using UnityEditor;
+using UnityEngine;
+using Utility;
 
 namespace StoneAge {
-    public enum LoggingLevel {
-        None = 0,
-        Timing,
-    }
 
     public enum DebugTextures {
         ErosionBuffer = 1,
@@ -19,9 +15,6 @@ namespace StoneAge {
     }
 
     public class StoneAging : EditorWindow {
-        [SerializeField]
-        private LoggingLevel loggingLevel = LoggingLevel.Timing;
-
         [SerializeField]
         private Texture2D albedoMap = null;
         [SerializeField]
@@ -51,8 +44,6 @@ namespace StoneAge {
         private Height.RoughnessParameters roughnessParameters;
 
         [SerializeField]
-        private bool saveToDisk = false;
-        [SerializeField]
         private System.Environment.SpecialFolder saveLocation;
         [SerializeField]
         private string folderName = "StoneAge";
@@ -63,7 +54,6 @@ namespace StoneAge {
         private Vector2 scrollPos;
 
         private SerializedObject serializedObject;
-        private SerializedProperty propLoggingLevel;
         private SerializedProperty propAlbedoMap;
         private SerializedProperty propHeightMap;
         private SerializedProperty propRoughnessMap;
@@ -75,7 +65,6 @@ namespace StoneAge {
         private SerializedProperty propErosionParameters;
         private SerializedProperty propLichenParameters;
         private SerializedProperty propRoughnessParameters;
-        private SerializedProperty propSaveToDisk;
         private SerializedProperty propSaveLocation;
         private SerializedProperty propFolderName;
 
@@ -84,7 +73,6 @@ namespace StoneAge {
 
         private void OnEnable() {
             serializedObject = new SerializedObject(this);
-            propLoggingLevel = serializedObject.FindProperty("loggingLevel");
             propAlbedoMap = serializedObject.FindProperty("albedoMap");
             propHeightMap = serializedObject.FindProperty("heightMap");
             propRoughnessMap = serializedObject.FindProperty("roughnessMap");
@@ -96,18 +84,12 @@ namespace StoneAge {
             propErosionParameters = serializedObject.FindProperty("erosionParameters");
             propLichenParameters = serializedObject.FindProperty("lichenParameters");
             propRoughnessParameters = serializedObject.FindProperty("roughnessParameters");
-            propSaveToDisk = serializedObject.FindProperty("saveToDisk");
             propSaveLocation = serializedObject.FindProperty("saveLocation");
             propFolderName = serializedObject.FindProperty("folderName");
         }
 
         private void OnGUI() {
             scrollPos = EditorGUILayout.BeginScrollView(scrollPos);
-
-            EditorGUILayout.LabelField("Settings", EditorStyles.boldLabel);
-            EditorGUILayout.PropertyField(propLoggingLevel);
-
-            EditorGUILayout.Space();
             EditorGUILayout.LabelField("Input textures", EditorStyles.boldLabel);
             EditorGUILayout.PropertyField(propAlbedoMap);
             EditorGUILayout.PropertyField(propHeightMap);
@@ -129,13 +111,9 @@ namespace StoneAge {
 
             EditorGUILayout.Space();
             EditorGUILayout.LabelField("Export settings", EditorStyles.boldLabel);
-            EditorGUILayout.PropertyField(propSaveToDisk);
-
-            if (propSaveToDisk.boolValue) {
-                EditorGUILayout.PropertyField(propSaveLocation);
-                EditorGUILayout.PropertyField(propFolderName);
-                additionalTextureFlags = EditorGUILayout.MaskField("Save additional textures", additionalTextureFlags, additionalTextureOptions);
-            }
+            EditorGUILayout.PropertyField(propSaveLocation);
+            EditorGUILayout.PropertyField(propFolderName);
+            additionalTextureFlags = EditorGUILayout.MaskField("Save additional textures", additionalTextureFlags, additionalTextureOptions);
 
             serializedObject.ApplyModifiedProperties();
 
@@ -174,10 +152,11 @@ namespace StoneAge {
                 return;
             }
 
-            float totalWork = agingYears + 3 + (saveToDisk ? 1 : 0);
+            float totalWork = agingYears + 4;
             float completeWork = 0;
+            Utility.Logger logger = new Utility.Logger();
 
-            Debug.Log("Initializing...");
+            logger.Log("Initializing...");
             if (EditorUtility.DisplayCancelableProgressBar("Aging", "Initializing", completeWork++ / totalWork)) {
                 CleanUp();
                 return;
@@ -190,6 +169,8 @@ namespace StoneAge {
             float[,] sedimentNoise = Textures.PerlinNoise(size, colorationParameters.noiseScale);
             float[,] ironNoise = Textures.PerlinNoise(size, colorationParameters.noiseScale);
             float[,] efflorescenceNoise = Textures.PerlinNoise(size, colorationParameters.noiseScale);
+
+            
 
             // Create buffers from the input textures.
             Color[,] albedoBuffer = Conversion.CreateColorBuffer(albedoMap);
@@ -210,6 +191,7 @@ namespace StoneAge {
                     }
                 }
             }
+            float[,] roughnessBufferDead = Conversion.CopyBuffer(roughnessBuffer);
 
             List<LichenGrowth.Cluster> lichenClusters = new List<LichenGrowth.Cluster>();
             for (int i = 0; i < lichenParameters.initialSeeds; ++i) {
@@ -218,10 +200,10 @@ namespace StoneAge {
 
             Shader utilityShader = Shader.Find("Hidden/Utility");
 
-            LogTime("Initialization done", initializationStart);
+            logger.LogTime("Initialization done", initializationStart);
 
             // Perform the aging.
-            Debug.Log("Aging...");
+            logger.Log("Aging...");
             if (EditorUtility.DisplayCancelableProgressBar("Aging", "Aging", completeWork++ / totalWork)) {
                 CleanUp();
                 return;
@@ -259,12 +241,12 @@ namespace StoneAge {
                     return;
                 }
 
-                LogTime("Aged " + (year + 1) + " year" + ((year + 1 == 1) ? "" : "s"), yearStart);
+                logger.LogTime("Aged " + (year + 1) + " year" + ((year + 1 == 1) ? "" : "s"), yearStart);
             }
 
-            LogTime("Aging done", simulationStart);
+            logger.LogTime("Aging done", simulationStart);
 
-            Debug.Log("Finalizing...");
+            logger.Log("Finalizing...");
             if (EditorUtility.DisplayCancelableProgressBar("Aging", "Finalizing", completeWork++ / totalWork)) {
                 CleanUp();
                 return;
@@ -274,7 +256,7 @@ namespace StoneAge {
             float[,] erosionBuffer = Conversion.DifferenceMap(originalRockHeight, Conversion.ExtractBufferLayer(layers, (int) Erosion.LayerName.Rock));
             Height.Normalize(ref erosionBuffer);
 
-            float[,] heightBuffer = Height.FinalizeHeight(ref layers);
+            float[,] heightBufferDead = Height.FinalizeHeight(ref layers);
 
             Coloration.SurfaceSolutionDiscoloration(ref albedoBuffer, ironNoise, colorationParameters.ironGranularity, colorationParameters.ironColor, colorationParameters.ironOpacityModifier, agingYears, effectiveMaxAge, true);
 
@@ -288,62 +270,66 @@ namespace StoneAge {
 
             Height.Normalize(ref visits);
 
-            Texture2D[] lichenResults = LichenGrowth.CreateLichenTexture(lichenClusters, size, Conversion.CreateTexture(size, albedoBuffer), utilityShader, lichenParameters);
+            Texture2D albedoResult = Conversion.CreateTexture(size, albedoBuffer);
+            Texture2D[] lichenResults = LichenGrowth.CreateLichenTexture(lichenClusters, size, albedoResult, utilityShader, lichenParameters);
             float[,] lichenHeight = Conversion.CreateFloatBuffer(lichenResults[1]);
             lichenHeight = Conversion.ScalarMultMap(lichenHeight, lichenParameters.lichenHeightScale);
-            heightBuffer = Conversion.SumMap(heightBuffer, lichenHeight);
-            Height.Normalize(ref heightBuffer);
+            float[,] heightBuffer = Conversion.SumMap(heightBufferDead, lichenHeight);
+            Height.Normalize(ref heightBufferDead);
 
-            Height.GenerateRoughness(ref roughnessBuffer, erosionBuffer, sedimentBuffer, lichenHeight, roughnessParameters);
+            Height.GenerateRoughness(ref roughnessBuffer, ref roughnessBufferDead, erosionBuffer, sedimentBuffer, lichenHeight, roughnessParameters);
             Height.Normalize(ref roughnessBuffer);
 
-            LogTime("Finalization done", finalizationStart);
+            logger.LogTime("Finalization done", finalizationStart);
 
-            if (saveToDisk) {
-                Debug.Log("Saving...");
-                if (EditorUtility.DisplayCancelableProgressBar("Aging", "Saving", completeWork++ / totalWork)) {
-                    CleanUp();
-                    return;
-                }
-                System.DateTime savingStart = System.DateTime.Now;
+            logger.Log("Saving...");
+            if (EditorUtility.DisplayCancelableProgressBar("Aging", "Saving", completeWork++ / totalWork)) {
+                CleanUp();
+                return;
+            }
+            System.DateTime savingStart = System.DateTime.Now;
 
-                string savePath = System.Environment.GetFolderPath(saveLocation) + "/" + folderName + "/";
-                System.IO.Directory.CreateDirectory(savePath);
-                Textures.SaveTextureAsPNG(lichenResults[0], savePath + "Albedo_Aged_" + agingYears + ".png");
-                Textures.SaveTextureAsPNG(Conversion.CreateTexture(size, heightBuffer), savePath + "Height_Aged_" + agingYears + ".png");
-                Textures.SaveTextureAsPNG(Conversion.CreateTexture(size, roughnessBuffer), savePath + "Roughness_Aged_" + agingYears + ".png");
+            string savePath = System.Environment.GetFolderPath(saveLocation) + "/" + folderName + "/" + agingYears + "/";
+            System.IO.Directory.CreateDirectory(savePath);
+            Textures.SaveTextureAsPNG(lichenResults[0], savePath + "Albedo.png");
+            Textures.SaveTextureAsPNG(Conversion.CreateTexture(size, heightBuffer), savePath + "Height.png");
+            Textures.SaveTextureAsPNG(Conversion.CreateTexture(size, roughnessBuffer), savePath + "Roughness.png");
+
+            Textures.SaveTextureAsPNG(albedoResult, savePath + "Dead_Albedo.png");
+            Textures.SaveTextureAsPNG(Conversion.CreateTexture(size, heightBufferDead), savePath + "Dead_Height.png");
+            Textures.SaveTextureAsPNG(Conversion.CreateTexture(size, roughnessBufferDead), savePath + "Dead_Roughness.png");
+
+            logger.WriteToFile(savePath + "Log.txt");
+
+            if (additionalTextureFlags != 0) {
+                string debugPath = savePath + "Debug/";
+                System.IO.Directory.CreateDirectory(debugPath);
 
                 if ((additionalTextureFlags & (int) DebugTextures.ErosionBuffer) > 0) {
-                    Textures.SaveTextureAsPNG(Conversion.CreateTexture(size, erosionBuffer), savePath + "Erosion_Buffer_" + agingYears + ".png");
+                    Textures.SaveTextureAsPNG(Conversion.CreateTexture(size, erosionBuffer), debugPath + "Erosion_Buffer.png");
                 }
 
                 if ((additionalTextureFlags & (int) DebugTextures.SedimentBuffer) > 0) {
-                    Textures.SaveTextureAsPNG(Conversion.CreateTexture(size, sedimentBuffer), savePath + "Sediment_Buffer_" + agingYears + ".png");
+                    Textures.SaveTextureAsPNG(Conversion.CreateTexture(size, sedimentBuffer), debugPath + "Sediment_Buffer.png");
                 }
 
                 if ((additionalTextureFlags & (int) DebugTextures.VisitBuffer) > 0) {
-                    Textures.SaveTextureAsPNG(Conversion.CreateTexture(size, visits), savePath + "Visit_Buffer_" + agingYears + ".png");
+                    Textures.SaveTextureAsPNG(Conversion.CreateTexture(size, visits), debugPath + "Visit_Buffer.png");
                 }
 
                 if ((additionalTextureFlags & (int) DebugTextures.LichenBuffer) > 0) {
-                    Textures.SaveTextureAsPNG(lichenResults[2], savePath + "Lichen_Buffer_" + agingYears + ".png");
+                    Textures.SaveTextureAsPNG(lichenResults[2], debugPath + "Lichen_Buffer.png");
                 }
 
                 if ((additionalTextureFlags & (int) DebugTextures.LichenHeightBuffer) > 0) {
-                    Textures.SaveTextureAsPNG(lichenResults[1], savePath + "Lichen_Height_Buffer_" + agingYears + ".png");
+                    Textures.SaveTextureAsPNG(lichenResults[1], debugPath + "Lichen_Height.png");
                 }
-
-                LogTime("Saving done", savingStart);
             }
+
+            logger.LogTime("Saving done", savingStart);
+
             CleanUp();
-            LogTime("All done", initializationStart);
-        }
-
-        private void LogTime(string text, System.DateTime startTime) {
-            if (loggingLevel >= LoggingLevel.Timing) {
-                System.TimeSpan timeDifference = System.DateTime.Now - startTime;
-                Debug.Log(text + " (" + (timeDifference.Hours * 3600 + timeDifference.Minutes * 60 + timeDifference.Seconds + timeDifference.Milliseconds * 0.001) + " s).");
-            }
+            logger.LogTime("All done", initializationStart);
         }
 
         private void CleanUp() {

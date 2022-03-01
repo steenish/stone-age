@@ -32,6 +32,19 @@ namespace Utility {
             return result;
         }
 
+        public static T[,] CopyBuffer<T>(T[,] buffer) {
+            int size = buffer.GetLength(0);
+            T[,] copy = new T[size, size];
+
+            for (int y = 0; y < size; ++y) {
+                for (int x = 0; x < size; ++x) {
+                    copy[x, y] = buffer[x, y];
+                }
+            }
+
+            return copy;
+        }
+
         private static T[,] CreateBuffer<T>(Texture2D map, Func<Color, T> valueExtractionFunction) {
             int size = map.width;
             T[,] colors = new T[size, size];

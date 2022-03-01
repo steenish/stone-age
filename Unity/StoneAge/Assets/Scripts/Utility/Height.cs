@@ -32,7 +32,7 @@ namespace Utility {
             return aggregateHeight;
         }
 
-        public static void GenerateRoughness(ref float[,] roughnessBuffer, float[,] erosionBuffer, float[,] sedimentBuffer, float[,] lichenBuffer, RoughnessParameters parameters) {
+        public static void GenerateRoughness(ref float[,] roughnessBuffer, ref float[,] roughnessBufferDead,  float[,] erosionBuffer, float[,] sedimentBuffer, float[,] lichenBuffer, RoughnessParameters parameters) {
             int size = roughnessBuffer.GetLength(0);
             
             for (int y = 0; y < size; ++y) {
@@ -42,6 +42,7 @@ namespace Utility {
                     float lichenContribution = parameters.lichenModifier * (lichenBuffer[x, y] > 0.0f ? 1 : 0);
 
                     roughnessBuffer[x, y] += erosionContribution + sedimentContribution + lichenContribution;
+                    roughnessBufferDead[x, y] += erosionContribution + sedimentContribution;
                 }
             }
         }
