@@ -279,6 +279,7 @@ namespace StoneAge {
 
             Height.GenerateRoughness(ref roughnessBuffer, ref roughnessBufferDead, erosionBuffer, sedimentBuffer, lichenHeight, roughnessParameters);
             Height.Normalize(ref roughnessBuffer);
+            Height.Normalize(ref roughnessBufferDead);
 
             logger.LogTime("Finalization done", finalizationStart);
 
