@@ -27,13 +27,14 @@ namespace Utility {
                 }
             }
 
-            Normalize(ref aggregateHeight);
-
-            return aggregateHeight;
+            return Normalize(aggregateHeight);
         }
 
-        public static void GenerateRoughness(ref float[,] roughnessBuffer, ref float[,] roughnessBufferDead, float[,] erosionBuffer, float[,] sedimentBuffer, float[,] lichenBuffer, RoughnessParameters parameters) {
+        public static (float[,], float[,]) GenerateRoughness(float[,] roughnessBuffer, float[,] roughnessBufferDead, float[,] erosionBuffer, float[,] sedimentBuffer, float[,] lichenBuffer, RoughnessParameters parameters) {
             int size = roughnessBuffer.GetLength(0);
+
+            float[,] newRoughness = new float[size, size];
+            float[,] newRoughnessDead = new float[size, size];
             
             for (int y = 0; y < size; ++y) {
                 for (int x = 0; x < size; ++x) {
@@ -41,10 +42,12 @@ namespace Utility {
                     float sedimentContribution = parameters.sedimentModifier * (sedimentBuffer[x, y] - 0.5f) * 2.0f;
                     float lichenContribution = parameters.lichenModifier * (lichenBuffer[x, y] > 0.0f ? 1 : 0);
 
-                    roughnessBuffer[x, y] += erosionContribution + sedimentContribution + lichenContribution;
-                    roughnessBufferDead[x, y] += erosionContribution + sedimentContribution;
+                    newRoughness[x, y] = roughnessBuffer[x, y] + erosionContribution + sedimentContribution + lichenContribution;
+                    newRoughnessDead[x, y] = roughnessBufferDead[x, y] + erosionContribution + sedimentContribution;
                 }
             }
+
+            return (newRoughness, newRoughnessDead);
         }
 
         public static Vector2 GetInterpolatedGradient(Vector2 position, float[,,] values) {
@@ -96,8 +99,10 @@ namespace Utility {
             return sum;
         }
 
-        public static void Normalize(ref float[,] heightBuffer) {
+        public static float[,] Normalize(float[,] heightBuffer) {
             int size = heightBuffer.GetLength(0);
+
+            float[,] result = new float[size, size];
 
             // Find min and max height.
             float minHeight = float.MaxValue;
@@ -115,10 +120,12 @@ namespace Utility {
                 float normalizingDenominator = 1 / (difference);
                 for (int x = 0; x < size; ++x) {
                     for (int y = 0; y < size; ++y) {
-                        heightBuffer[x, y] = (heightBuffer[x, y] - minHeight) * normalizingDenominator;
+                        result[x, y] = (heightBuffer[x, y] - minHeight) * normalizingDenominator;
                     }
                 }
             }
+
+            return result;
         }
 
         public static void NormalizeHeightLayer(ref float[,,] layers, int layerIndex) {

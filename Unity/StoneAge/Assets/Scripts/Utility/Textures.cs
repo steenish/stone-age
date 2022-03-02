@@ -137,9 +137,7 @@ namespace Utility {
                 }
             }
 
-            Height.Normalize(ref result);
-
-            return result;
+            return Height.Normalize(result);
         }
 
         public static Texture2D PerlinNoiseTexture(int size, float scale) {
