@@ -98,6 +98,14 @@ namespace StoneAge {
 
         private void OnGUI() {
             scrollPos = EditorGUILayout.BeginScrollView(scrollPos);
+
+            if (GUILayout.Button("Import parameter settings")) {
+                DeserializeAndImport();
+            }
+            if (GUILayout.Button("Export parameter settings")) {
+                SerializeAndExport();
+            }
+
             EditorGUILayout.LabelField("Input textures", EditorStyles.boldLabel);
             EditorGUILayout.PropertyField(propAlbedoMap);
             EditorGUILayout.PropertyField(propHeightMap);
@@ -390,6 +398,25 @@ namespace StoneAge {
 
         private void CleanUp() {
             EditorUtility.ClearProgressBar();
+        }
+
+        [ContextMenu("Export parameter settings")]
+        private void SerializeAndExport() {
+            string savePath = EditorUtility.SaveFilePanelInProject("Export stone aging parameters", "StoneAging.json", "json", "Please enter a file name to save the parameters to");
+
+            if (savePath.Length > 0) {
+                string json = EditorJsonUtility.ToJson(this);
+                System.IO.File.WriteAllText(savePath, json);
+            }
+        }
+
+        private void DeserializeAndImport() {
+            string loadPath = EditorUtility.OpenFilePanel("Import stone aging parameters", Application.dataPath, "json");
+            
+            if (loadPath.Length > 0) {
+                string json = System.IO.File.ReadAllText(loadPath);
+                EditorJsonUtility.FromJsonOverwrite(json, this);
+            }
         }
     }
 }
