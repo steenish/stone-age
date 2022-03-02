@@ -231,7 +231,7 @@ namespace StoneAge {
                     }
 
                     // Spawn new lichen seeds.
-                    if (Random.value < lichenParameters.newSeedProbability) {
+                    if (lichenClusters.Count < lichenParameters.maxTotalClusters && Random.value < lichenParameters.newSeedProbability) {
                         LichenGrowth.SpawnCluster(ref lichenClusters, size, lichenParameters);
                     }
                 }
@@ -256,7 +256,7 @@ namespace StoneAge {
             float[,] erosionBuffer = Conversion.DifferenceMap(originalRockHeight, Conversion.ExtractBufferLayer(layers, (int) Erosion.LayerName.Rock));
             Height.Normalize(ref erosionBuffer);
 
-            float[,] heightBufferDead = Height.FinalizeHeight(ref layers);
+            float[,] heightBufferDead = Height.FinalizeHeight(layers);
 
             Coloration.SurfaceSolutionDiscoloration(ref albedoBuffer, ironNoise, colorationParameters.ironGranularity, colorationParameters.ironColor, colorationParameters.ironOpacityModifier, agingYears, effectiveMaxAge, true);
 
@@ -275,11 +275,8 @@ namespace StoneAge {
             float[,] lichenHeight = Conversion.CreateFloatBuffer(lichenResults[1]);
             lichenHeight = Conversion.ScalarMultMap(lichenHeight, lichenParameters.lichenHeightScale);
             float[,] heightBuffer = Conversion.SumMap(heightBufferDead, lichenHeight);
-            Height.Normalize(ref heightBufferDead);
 
             Height.GenerateRoughness(ref roughnessBuffer, ref roughnessBufferDead, erosionBuffer, sedimentBuffer, lichenHeight, roughnessParameters);
-            Height.Normalize(ref roughnessBuffer);
-            Height.Normalize(ref roughnessBufferDead);
 
             logger.LogTime("Finalization done", finalizationStart);
 

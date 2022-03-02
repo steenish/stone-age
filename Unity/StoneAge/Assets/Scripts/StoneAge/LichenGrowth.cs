@@ -54,6 +54,8 @@ namespace StoneAge {
             public float lichenHeightScale = 0.2f;
             [Range(1, 100)]
             public int maxClustersPerDay = 10;
+            [Range(0, 1000)]
+            public int maxTotalClusters = 10;
             public Species[] species;
             public AnimationCurve directLightSensitivity;
             public AnimationCurve indirectLightSensitivity;

@@ -13,7 +13,7 @@ namespace Utility {
             public float lichenModifier = 1.0f;
         }
 
-        public static float[,] FinalizeHeight(ref float[,,] layers) {
+        public static float[,] FinalizeHeight(float[,,] layers) {
             int size = layers.GetLength(0);
             int numLayers = layers.GetLength(2);
 
@@ -34,35 +34,15 @@ namespace Utility {
 
         public static void GenerateRoughness(ref float[,] roughnessBuffer, ref float[,] roughnessBufferDead, float[,] erosionBuffer, float[,] sedimentBuffer, float[,] lichenBuffer, RoughnessParameters parameters) {
             int size = roughnessBuffer.GetLength(0);
-
-            float sumRoughnessOriginal = 0.0f;
-            float sumRoughness = 0.0f;
-            float sumRoughnessDead = 0.0f;
             
             for (int y = 0; y < size; ++y) {
                 for (int x = 0; x < size; ++x) {
-                    sumRoughnessOriginal += roughnessBuffer[x, y];
-                    
                     float erosionContribution = parameters.erosionModifier * (erosionBuffer[x, y] - 0.5f) * 2.0f;
                     float sedimentContribution = parameters.sedimentModifier * (sedimentBuffer[x, y] - 0.5f) * 2.0f;
                     float lichenContribution = parameters.lichenModifier * (lichenBuffer[x, y] > 0.0f ? 1 : 0);
 
                     roughnessBuffer[x, y] += erosionContribution + sedimentContribution + lichenContribution;
-                    sumRoughness += roughnessBuffer[x, y];
                     roughnessBufferDead[x, y] += erosionContribution + sedimentContribution;
-                    sumRoughnessDead += roughnessBufferDead[x, y];
-                }
-            }
-
-            float denominator = (float) 1 / (size * size);
-            float averageRoughnessOriginal = sumRoughnessOriginal * denominator;
-            float roughnessScale = averageRoughnessOriginal / (sumRoughness * denominator);
-            float roughnessScaleDead = averageRoughnessOriginal / (sumRoughnessDead * denominator);
-
-            for (int y = 0; y < size; ++y) {
-                for (int x = 0; x < size; ++x) {
-                    roughnessBuffer[x, y] = (((roughnessBuffer[x, y] - 0.5f) * 2.0f * roughnessScale) + 1) * 0.5f;
-                    roughnessBufferDead[x, y] = (((roughnessBufferDead[x, y] - 0.5f) * 2.0f * roughnessScaleDead) + 1) * 0.5f;
                 }
             }
         }
