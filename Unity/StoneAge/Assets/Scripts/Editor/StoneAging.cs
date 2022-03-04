@@ -94,18 +94,27 @@ namespace StoneAge {
             propFolderName = serializedObject.FindProperty("folderName");
             propAnimate = serializedObject.FindProperty("animate");
             propIterationsPerFrame = serializedObject.FindProperty("iterationsPerFrame");
+            DeserializeAndLoadTemp();
+        }
+
+        private void OnDisable() {
+            SerializeAndStoreTemp();
         }
 
         private void OnGUI() {
             scrollPos = EditorGUILayout.BeginScrollView(scrollPos);
 
+            EditorGUILayout.LabelField("Parameter import/export", EditorStyles.boldLabel);
+            GUILayout.BeginHorizontal();
             if (GUILayout.Button("Import parameter settings")) {
                 DeserializeAndImport();
             }
             if (GUILayout.Button("Export parameter settings")) {
                 SerializeAndExport();
             }
+            GUILayout.EndHorizontal();
 
+            EditorGUILayout.Space();
             EditorGUILayout.LabelField("Input textures", EditorStyles.boldLabel);
             EditorGUILayout.PropertyField(propAlbedoMap);
             EditorGUILayout.PropertyField(propHeightMap);
@@ -131,10 +140,12 @@ namespace StoneAge {
             EditorGUILayout.PropertyField(propFolderName);
             additionalTextureFlags = EditorGUILayout.MaskField("Save additional textures", additionalTextureFlags, additionalTextureOptions);
 
+            GUILayout.BeginHorizontal();
             EditorGUILayout.PropertyField(propAnimate);
             if (propAnimate.boolValue) {
                 EditorGUILayout.PropertyField(propIterationsPerFrame);
             }
+            GUILayout.EndHorizontal();
 
             serializedObject.ApplyModifiedProperties();
 
@@ -400,23 +411,31 @@ namespace StoneAge {
             EditorUtility.ClearProgressBar();
         }
 
-        [ContextMenu("Export parameter settings")]
         private void SerializeAndExport() {
-            string savePath = EditorUtility.SaveFilePanelInProject("Export stone aging parameters", "StoneAging.json", "json", "Please enter a file name to save the parameters to");
-
+            string savePath = EditorUtility.SaveFilePanel("Export stone aging parameters", Application.dataPath, "StoneAging.json", "json");
             if (savePath.Length > 0) {
                 string json = EditorJsonUtility.ToJson(this);
                 System.IO.File.WriteAllText(savePath, json);
             }
         }
 
+        private void SerializeAndStoreTemp() {
+            EditorPrefs.SetString("tempParams", EditorJsonUtility.ToJson(this));
+        }
+
         private void DeserializeAndImport() {
             string loadPath = EditorUtility.OpenFilePanel("Import stone aging parameters", Application.dataPath, "json");
-            
             if (loadPath.Length > 0) {
                 string json = System.IO.File.ReadAllText(loadPath);
                 EditorJsonUtility.FromJsonOverwrite(json, this);
+                EditorUtility.RequestScriptReload();
             }
+        }
+
+        private void DeserializeAndLoadTemp() {
+            string json = EditorPrefs.GetString("tempParams");
+            EditorJsonUtility.FromJsonOverwrite(json, this);
+            EditorUtility.RequestScriptReload();
         }
     }
 }
