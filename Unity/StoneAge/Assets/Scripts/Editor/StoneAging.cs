@@ -51,8 +51,6 @@ namespace StoneAge {
         private bool animate = false;
         [SerializeField]
         private int iterationsPerFrame = 10;
-        [SerializeField]
-        private bool verboseLogging = false;
 
         private static int additionalTextureFlags = 0;
         private static readonly string[] additionalTextureOptions = new string[] { "Erosion buffer", "Sediment buffer", "Visit buffer", "Lichen buffer", "Lichen height buffer" };
@@ -75,7 +73,6 @@ namespace StoneAge {
         private SerializedProperty propFolderName;
         private SerializedProperty propAnimate;
         private SerializedProperty propIterationsPerFrame;
-        private SerializedProperty propVerboseLogging;
 
         [MenuItem("Tools/Stone aging")]
         public static void OpenTool() => GetWindow<StoneAging>("Stone aging");
@@ -97,7 +94,6 @@ namespace StoneAge {
             propFolderName = serializedObject.FindProperty("folderName");
             propAnimate = serializedObject.FindProperty("animate");
             propIterationsPerFrame = serializedObject.FindProperty("iterationsPerFrame");
-            propVerboseLogging = serializedObject.FindProperty("verboseLogging");
             DeserializeAndLoadTemp();
         }
 
@@ -140,7 +136,6 @@ namespace StoneAge {
 
             EditorGUILayout.Space();
             EditorGUILayout.LabelField("Export settings", EditorStyles.boldLabel);
-            EditorGUILayout.PropertyField(propVerboseLogging);
             EditorGUILayout.PropertyField(propSaveLocation);
             EditorGUILayout.PropertyField(propFolderName);
             additionalTextureFlags = EditorGUILayout.MaskField("Save additional textures", additionalTextureFlags, additionalTextureOptions);
@@ -191,9 +186,9 @@ namespace StoneAge {
 
             float totalWork = iterations + 3 + (animate ? 0 : 1);
             float completeWork = 0;
-            Utility.Logger logger = new Utility.Logger(verboseLogging);
+            Utility.Logger logger = new Utility.Logger();
 
-            logger.Log("Initializing...", Utility.Logger.LoggingLevel.Default);
+            logger.Log("Initializing...");
             if (EditorUtility.DisplayCancelableProgressBar("Aging", "Initializing", completeWork++ / totalWork)) {
                 CleanUp();
                 return;
@@ -253,28 +248,31 @@ namespace StoneAge {
             float[,] ironGrains = Textures.PerlinNoise(size, colorationParameters.ironGranularity);
             float[,] efflorescenceGrains = Textures.PerlinNoise(size, colorationParameters.efflorescenceGranularity);
 
-            logger.LogTime("Initialization done", initializationStart, Utility.Logger.LoggingLevel.Default);
+            logger.LogTime("Initialization done", initializationStart);
 
             // Perform the aging.
-            logger.Log("Aging...", Utility.Logger.LoggingLevel.Default);
+            logger.Log("Aging...");
             if (EditorUtility.DisplayCancelableProgressBar("Aging", "Aging", completeWork++ / totalWork)) {
                 CleanUp();
                 return;
             }
             
             System.DateTime simulationStart = System.DateTime.Now;
+            System.TimeSpan totalErosionTime = System.TimeSpan.Zero;
+            System.TimeSpan totalLichenTime = System.TimeSpan.Zero;
 
             float[,] visits = new float[size, size];
 
             for (int iteration = 0, frame = 0; iteration < iterations; ++iteration) {
-                System.DateTime yearStart = System.DateTime.Now;
-
                 // Perform hydraulic (rain) erosion.
+                System.DateTime erosionStart = System.DateTime.Now;
                 if (Random.value < rainRate) {
                     Erosion.ErosionEvent(ref layers, erosionParameters, ref visits);
                 }
+                totalErosionTime += System.DateTime.Now - erosionStart;
 
                 // Perform lichen growth.
+                System.DateTime lichenStart = System.DateTime.Now;
                 List<LichenGrowth.Cluster> dailyClusters = lichenClusters.OrderBy(x => Random.value).Take(lichenParameters.maxClustersPerDay).ToList();
                 for (int i = 0; i < dailyClusters.Count; ++i) {
                     LichenGrowth.LichenGrowthEvent(dailyClusters[i], size, lichenParameters, layers);
@@ -284,6 +282,7 @@ namespace StoneAge {
                 if (lichenClusters.Count < lichenParameters.maxTotalClusters && Random.value < lichenParameters.newSeedProbability) {
                     LichenGrowth.SpawnCluster(ref lichenClusters, size, lichenParameters);
                 }
+                totalLichenTime += System.DateTime.Now - lichenStart;
 
                 if (EditorUtility.DisplayCancelableProgressBar("Aging", $"Aged iteration {iteration + 1} / {iterations}", completeWork++ / totalWork)) {
                     CleanUp();
@@ -321,16 +320,24 @@ namespace StoneAge {
                     Textures.SaveTextureAsPNG(Conversion.CreateTexture(size, heightBufferDead), $"{deadPath}Height/{frame}.png");
                     Textures.SaveTextureAsPNG(Conversion.CreateTexture(size, newRoughnessDead), $"{deadPath}Roughness/{frame}.png");
                     frame++;
-                    logger.Log($"Saved frame {frame}.", Utility.Logger.LoggingLevel.Default);
+                    logger.Log($"Saved frame {frame}.");
                 }
-
-                logger.LogTime($"Aged {iteration + 1} iterations", yearStart, Utility.Logger.LoggingLevel.Verbose);
             }
 
-            logger.LogTime("Aging done", simulationStart, Utility.Logger.LoggingLevel.Default);
+            logger.LogTime("Aging done", simulationStart);
+            logger.LogTime("Total erosion time", totalErosionTime);
+            logger.LogTime("Total lichen time", totalLichenTime);
+
+            int numLichenParticles = 0;
+            for (int i = 0; i < lichenClusters.Count; ++i) {
+                numLichenParticles += lichenClusters[i].particles.Count;
+            }
+
+            logger.Log($"Number of lichen clusters: {lichenClusters.Count}");
+            logger.Log($"Number of lichen particles: {numLichenParticles}");
 
             if (!animate) {
-                logger.Log("Finalizing...", Utility.Logger.LoggingLevel.Default);
+                logger.Log("Finalizing...");
                 if (EditorUtility.DisplayCancelableProgressBar("Aging", "Finalizing", completeWork++ / totalWork)) {
                     CleanUp();
                     return;
@@ -362,9 +369,9 @@ namespace StoneAge {
 
                 (float[,] newRoughness, float[,] newRoughnessDead) = Height.GenerateRoughness(roughnessBuffer, roughnessBufferDead, erosionBuffer, sedimentBuffer, lichenHeight, roughnessParameters);
 
-                logger.LogTime("Finalization done", finalizationStart, Utility.Logger.LoggingLevel.Default);
+                logger.LogTime("Finalization done", finalizationStart);
 
-                logger.Log("Saving...", Utility.Logger.LoggingLevel.Default);
+                logger.Log("Saving...");
                 if (EditorUtility.DisplayCancelableProgressBar("Aging", "Saving", completeWork++ / totalWork)) {
                     CleanUp();
                     return;
@@ -404,11 +411,11 @@ namespace StoneAge {
                     }
                 }
 
-                logger.LogTime("Saving done", savingStart, Utility.Logger.LoggingLevel.Default);
+                logger.LogTime("Saving done", savingStart);
             }
             
             CleanUp();
-            logger.LogTime("All done", initializationStart, Utility.Logger.LoggingLevel.Default);
+            logger.LogTime("All done", initializationStart);
             logger.WriteToFile($"{savePath}Log.txt");
         }
 
