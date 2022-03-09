@@ -154,6 +154,10 @@ namespace StoneAge {
                 StartAging();
             }
 
+            if (GUILayout.Button("Simulate sequence")) {
+                AgeSequence();
+            }
+
             EditorGUILayout.EndScrollView();
         }
 
@@ -163,6 +167,44 @@ namespace StoneAge {
             } catch (System.Exception e) {
                 CleanUp();
                 Debug.LogError(e);
+            }
+        }
+
+        private void AgeSequence() {
+            string[] settingNames = new string[] {
+                "Rock1Lichen1test",
+                "Rock1Lichen2test",
+                "Rock1Lichen3test",
+                "Rock2Lichen1test",
+                "Rock2Lichen2test",
+                "Rock2Lichen3test",
+                "Rock3Lichen1test",
+                "Rock3Lichen2test",
+                "Rock3Lichen3test",
+                //"Rock1Lichen1",
+                //"Rock1Lichen2",
+                //"Rock1Lichen3",
+                //"Rock2Lichen1",
+                //"Rock2Lichen2",
+                //"Rock2Lichen3",
+                //"Rock3Lichen1",
+                //"Rock3Lichen2",
+                //"Rock3Lichen3",
+                //"Tiles1Lichen1",
+                //"Tiles1Lichen2",
+                //"Tiles1Lichen3",
+                //"Tiles2Lichen1",
+                //"Tiles2Lichen2",
+                //"Tiles2Lichen3",
+                //"Tiles3Lichen1",
+                //"Tiles3Lichen2",
+                //"Tiles3Lichen3"
+            };
+            string basePath = $"{Application.dataPath}/ParameterSettings/";
+            for (int i = 0; i < settingNames.Length; ++i) {
+                string path = $"{basePath}{settingNames[i]}.json";
+                DeserializeAndImport(path);
+                PerformAging();
             }
         }
 
@@ -442,6 +484,11 @@ namespace StoneAge {
                 EditorJsonUtility.FromJsonOverwrite(json, this);
                 EditorUtility.RequestScriptReload();
             }
+        }
+
+        private void DeserializeAndImport(string loadPath) {
+            string json = System.IO.File.ReadAllText(loadPath);
+            EditorJsonUtility.FromJsonOverwrite(json, this);
         }
 
         private void DeserializeAndLoadTemp() {
