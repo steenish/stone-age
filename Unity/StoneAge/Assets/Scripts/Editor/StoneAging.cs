@@ -55,6 +55,10 @@ namespace StoneAge {
         private static int additionalTextureFlags = 0;
         private static readonly string[] additionalTextureOptions = new string[] { "Erosion buffer", "Sediment buffer", "Visit buffer", "Lichen buffer", "Lichen height buffer" };
 
+        [SerializeField]
+        private bool simulateSequence = false;
+        private string currentSettingName;
+
         private Vector2 scrollPos;
 
         private SerializedObject serializedObject;
@@ -73,6 +77,7 @@ namespace StoneAge {
         private SerializedProperty propFolderName;
         private SerializedProperty propAnimate;
         private SerializedProperty propIterationsPerFrame;
+        private SerializedProperty propSimulateSequence;
 
         [MenuItem("Tools/Stone aging")]
         public static void OpenTool() => GetWindow<StoneAging>("Stone aging");
@@ -94,6 +99,7 @@ namespace StoneAge {
             propFolderName = serializedObject.FindProperty("folderName");
             propAnimate = serializedObject.FindProperty("animate");
             propIterationsPerFrame = serializedObject.FindProperty("iterationsPerFrame");
+            propSimulateSequence = serializedObject.FindProperty("simulateSequence");
             DeserializeAndLoadTemp();
         }
 
@@ -150,14 +156,17 @@ namespace StoneAge {
             serializedObject.ApplyModifiedProperties();
 
             EditorGUILayout.Space();
-            if (GUILayout.Button("Simulate")) {
-                StartAging();
+            EditorGUILayout.PropertyField(propSimulateSequence);
+            if (propSimulateSequence.boolValue) {
+                if (GUILayout.Button("Simulate sequence")) {
+                    AgeSequence();
+                }
+            } else {
+                if (GUILayout.Button("Simulate")) {
+                    StartAging();
+                }
             }
-
-            if (GUILayout.Button("Simulate sequence")) {
-                AgeSequence();
-            }
-
+            
             EditorGUILayout.EndScrollView();
         }
 
@@ -171,68 +180,41 @@ namespace StoneAge {
         }
 
         private void AgeSequence() {
-            string[] settingNames = new string[] {
-                "Rock1Lichen1test",
-                "Rock1Lichen2test",
-                "Rock1Lichen3test",
-                "Rock2Lichen1test",
-                "Rock2Lichen2test",
-                "Rock2Lichen3test",
-                "Rock3Lichen1test",
-                "Rock3Lichen2test",
-                "Rock3Lichen3test",
-                "Tiles1Lichen1test",
-                "Tiles1Lichen2test",
-                "Tiles1Lichen3test",
-                "Tiles2Lichen1test",
-                "Tiles2Lichen2test",
-                "Tiles2Lichen3test",
-                "Tiles3Lichen1test",
-                "Tiles3Lichen2test",
-                "Tiles3Lichen3test"
-                //"Rock1Lichen1",
-                //"Rock1Lichen2",
-                //"Rock1Lichen3",
-                //"Rock2Lichen1",
-                //"Rock2Lichen2",
-                //"Rock2Lichen3",
-                //"Rock3Lichen1",
-                //"Rock3Lichen2",
-                //"Rock3Lichen3",
-                //"Tiles1Lichen1",
-                //"Tiles1Lichen2",
-                //"Tiles1Lichen3",
-                //"Tiles2Lichen1",
-                //"Tiles2Lichen2",
-                //"Tiles2Lichen3",
-                //"Tiles3Lichen1",
-                //"Tiles3Lichen2",
-                //"Tiles3Lichen3"
-            };
-            string basePath = $"{Application.dataPath}/ParameterSettings/";
-            for (int i = 0; i < settingNames.Length; ++i) {
-                string path = $"{basePath}{settingNames[i]}.json";
-                DeserializeAndImport(path);
-                PerformAging();
+            string sequencePath = EditorUtility.OpenFilePanel("Select setting sequence file", Application.dataPath, "txt");
+            if (sequencePath.Length > 0) {
+                string[] settingNames = System.IO.File.ReadAllLines(sequencePath);
+                bool keepGoing = true;
+                try {
+                    for (int i = 0; i < settingNames.Length && keepGoing; ++i) {
+                        string path = $"{Application.dataPath}/ParameterSettings/{settingNames[i]}.json";
+                        DeserializeAndImport(path);
+                        currentSettingName = settingNames[i];
+                        simulateSequence = true;
+                        keepGoing = PerformAging();
+                    }
+                } catch (System.Exception e) {
+                    CleanUp();
+                    Debug.LogError(e);
+                }
             }
         }
 
-        private void PerformAging() {
+        private bool PerformAging() {
             if (albedoMap == null) {
                 Debug.LogError("No albedo map supplied.");
-                return;
+                return false;
             }
 
             if (heightMap == null) {
                 Debug.LogError("No height map supplied.");
-                return;
+                return false;
             }
 
             bool roughnessMapNull = roughnessMap == null;
 
             if (albedoMap.width != albedoMap.height || albedoMap.width != heightMap.width || albedoMap.height != heightMap.height || (!roughnessMapNull && (roughnessMap.height != roughnessMap.width || roughnessMap.width != albedoMap.width))) {
                 Debug.LogError("Maps are not the same size or not square.");
-                return;
+                return false;
             }
 
             float totalWork = iterations + 3 + (animate ? 0 : 1);
@@ -240,9 +222,9 @@ namespace StoneAge {
             Utility.Logger logger = new Utility.Logger();
 
             logger.Log("Initializing...");
-            if (EditorUtility.DisplayCancelableProgressBar("Aging", "Initializing", completeWork++ / totalWork)) {
+            if (EditorUtility.DisplayCancelableProgressBar(SelectProgressBarTitle(), "Initializing", completeWork++ / totalWork)) {
                 CleanUp();
-                return;
+                return false;
             }
             System.DateTime initializationStart = System.DateTime.Now;
 
@@ -303,9 +285,9 @@ namespace StoneAge {
 
             // Perform the aging.
             logger.Log("Aging...");
-            if (EditorUtility.DisplayCancelableProgressBar("Aging", "Aging", completeWork++ / totalWork)) {
+            if (EditorUtility.DisplayCancelableProgressBar(SelectProgressBarTitle(), "Aging", completeWork++ / totalWork)) {
                 CleanUp();
-                return;
+                return false;
             }
             
             System.DateTime simulationStart = System.DateTime.Now;
@@ -335,9 +317,9 @@ namespace StoneAge {
                 }
                 totalLichenTime += System.DateTime.Now - lichenStart;
 
-                if (EditorUtility.DisplayCancelableProgressBar("Aging", $"Aged iteration {iteration + 1} / {iterations}", completeWork++ / totalWork)) {
+                if (EditorUtility.DisplayCancelableProgressBar(SelectProgressBarTitle(), $"Aged iteration {iteration + 1} / {iterations}", completeWork++ / totalWork)) {
                     CleanUp();
-                    return;
+                    return false;
                 }
 
                 if (animate && iteration % iterationsPerFrame == 0) {
@@ -389,9 +371,9 @@ namespace StoneAge {
 
             if (!animate) {
                 logger.Log("Finalizing...");
-                if (EditorUtility.DisplayCancelableProgressBar("Aging", "Finalizing", completeWork++ / totalWork)) {
+                if (EditorUtility.DisplayCancelableProgressBar(SelectProgressBarTitle(), "Finalizing", completeWork++ / totalWork)) {
                     CleanUp();
-                    return;
+                    return false;
                 }
                 System.DateTime finalizationStart = System.DateTime.Now;
 
@@ -423,9 +405,9 @@ namespace StoneAge {
                 logger.LogTime("Finalization done", finalizationStart);
 
                 logger.Log("Saving...");
-                if (EditorUtility.DisplayCancelableProgressBar("Aging", "Saving", completeWork++ / totalWork)) {
+                if (EditorUtility.DisplayCancelableProgressBar(SelectProgressBarTitle(), "Saving", completeWork++ / totalWork)) {
                     CleanUp();
-                    return;
+                    return false;
                 }
                 System.DateTime savingStart = System.DateTime.Now;
 
@@ -468,6 +450,7 @@ namespace StoneAge {
             CleanUp();
             logger.LogTime("All done", initializationStart);
             logger.WriteToFile($"{savePath}Log.txt");
+            return true;
         }
 
         private void CleanUp() {
@@ -504,6 +487,10 @@ namespace StoneAge {
             string json = EditorPrefs.GetString("tempParams");
             EditorJsonUtility.FromJsonOverwrite(json, this);
             EditorUtility.RequestScriptReload();
+        }
+
+        private string SelectProgressBarTitle() {
+            return "Aging" + (simulateSequence ? $" using {currentSettingName}" : "");
         }
     }
 }
