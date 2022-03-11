@@ -1,4 +1,66 @@
 body {
     color: white;
     background-color: black;
+    font-family: sans-serif;
+    padding-top: 2%;
+}
+
+h1 {
+    text-align: center;
+    margin-top: 0;
+}
+
+.page {
+    position: relative;
+    height: 100%;
+    margin: auto;
+    width: 60%;
+}
+
+.page h2 {
+    text-align: center;
+}
+
+#instructionPage button {
+    margin: 0;
+    position: absolute;
+    width: 10%;
+    left: 45%;
+}
+
+#consentPage {
+    display: none;
+}
+
+#consentPage button {
+    margin: 0;
+    position: absolute;
+    width: 10%;
+    left: 45%;
+}
+
+#trialPage {
+    display: none;
+    text-align: center;
+}
+
+#trialPage table {
+    margin: auto;
+}
+
+#trialPage td {
+    padding-left: 3em;
+    padding-right: 3em;
+}
+
+#trialPage img {
+    width: 300px;
+}
+
+#appealQuestion {
+    display: none;
+}
+
+.appealButton {
+    display: none;
 }

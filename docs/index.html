@@ -1,9 +1,54 @@
 <!DOCTYPE html>
 <head>
     <title>Evaluation form</title>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
     <link rel="stylesheet" href="index.css">
-    <script src="index.js"></script>
 </head>
 <body>
-    <p id="hello"></p>
+    <h1 id="welcomeHeading">Welcome</h1>
+
+    <div id="instructionPage" class="page">
+        <h2>Instructions</h2>
+        <p>INSTRUCTIONS GO HERE INSTRUCTIONS GO HERE INSTRUCTIONS GO HERE INSTRUCTIONS GO HERE INSTRUCTIONS GO HERE INSTRUCTIONS GO HERE INSTRUCTIONS GO HERE INSTRUCTIONS GO HERE INSTRUCTIONS GO HERE INSTRUCTIONS GO HERE INSTRUCTIONS GO HERE INSTRUCTIONS GO HERE INSTRUCTIONS GO HERE INSTRUCTIONS GO HERE INSTRUCTIONS GO HERE INSTRUCTIONS GO HERE INSTRUCTIONS GO HERE INSTRUCTIONS GO HERE INSTRUCTIONS GO HERE INSTRUCTIONS GO HERE INSTRUCTIONS GO HERE INSTRUCTIONS GO HERE INSTRUCTIONS GO HERE INSTRUCTIONS GO HERE INSTRUCTIONS GO HERE INSTRUCTIONS GO HERE INSTRUCTIONS GO HERE INSTRUCTIONS GO HERE INSTRUCTIONS GO HERE INSTRUCTIONS GO HERE </p>
+        <button id="continueButton" disabled onclick="continueButtonPressed()">Continue</button>
+    </div>
+
+    <div id="consentPage" class="page">
+        <h2>Consent</h2>
+        <p>CONSENT GOES HERE CONSENT GOES HERE CONSENT GOES HERE CONSENT GOES HERE CONSENT GOES HERE CONSENT GOES HERE CONSENT GOES HERE CONSENT GOES HERE CONSENT GOES HERE CONSENT GOES HERE CONSENT GOES HERE CONSENT GOES HERE CONSENT GOES HERE CONSENT GOES HERE CONSENT GOES HERE CONSENT GOES HERE CONSENT GOES HERE CONSENT GOES HERE CONSENT GOES HERE CONSENT GOES HERE CONSENT GOES HERE CONSENT GOES HERE CONSENT GOES HERE CONSENT GOES HERE CONSENT GOES HERE CONSENT GOES HERE CONSENT GOES HERE CONSENT GOES HERE CONSENT GOES HERE CONSENT GOES HERE </p>
+        <button id="startButton" disabled onclick="startButtonPressed()">Start</button>
+    </div>
+
+    <div id="trialPage" class="page">
+        <h2 id="trialNumber">Trial x</h2>
+        <p>Based on this reference image</p>
+        <img id="referenceImage" src="img/REF.jpg">
+        <hr>
+        <p>Of the two images below:</p>
+        <p id="realismQuestion">Which one is more realistic to you?</p>
+        <p id="appealQuestion">Which one is more appealing to you?</p>
+        <table>
+            <tr>
+                <td>
+                    <img id="leftImage" src="img/NL.png">
+                </td>
+                <td>
+                    <img id="rightImage" src="img/WL.png">
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <button class="realismButton" onclick="realismSubmit()">Left</button>
+                    <button class="appealButton" onclick="appealSubmit()">Left</button>
+                </td>
+                <td>
+                    <button class="realismButton" onclick="realismSubmit()">Right</button>
+                    <button class="appealButton" onclick="appealSubmit()">Right</button>
+                </td>
+            </tr>
+        </table>
+        
+    </div>
+
+    <script src="index.js"></script>
 </body>
