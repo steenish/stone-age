@@ -2,12 +2,11 @@ body {
     color: white;
     background-color: black;
     font-family: sans-serif;
-    padding-top: 2%;
 }
 
 h1 {
     text-align: center;
-    margin-top: 0;
+    margin-top: 30px;
 }
 
 .page {
@@ -21,15 +20,13 @@ h1 {
     text-align: center;
 }
 
-#instructionPage button {
-    margin: 0;
-    position: absolute;
-    width: 10%;
-    left: 45%;
+#screenSizeWarning {
+    display: none;
 }
 
-#consentPage {
-    display: none;
+#consentPage p {
+    width: 80%;
+    margin: auto;
 }
 
 #consentPage button {
@@ -37,6 +34,26 @@ h1 {
     position: absolute;
     width: 10%;
     left: 45%;
+}
+
+#instructionPage {
+    display: none;
+}
+
+#instructionPage p {
+    width: 80%;
+    margin: auto;
+}
+
+#instructionPage button {
+    margin: 0;
+    position: absolute;
+    width: 10%;
+    left: 45%;
+}
+
+.highlightedText {
+    background-color: red;
 }
 
 #trialPage {
@@ -54,7 +71,7 @@ h1 {
 }
 
 #trialPage img {
-    width: 300px;
+    width: 350px;
 }
 
 #appealQuestion {
@@ -62,5 +79,33 @@ h1 {
 }
 
 .appealButton {
+    display: none;
+}
+
+#demographicsPage {
+    display: none;
+}
+
+#demographicsPage button {
+    margin: 0;
+    position: absolute;
+    width: 10%;
+    left: 45%;
+}
+
+#demographicsPage table {
+    margin: auto;
+    width: 70%;
+}
+
+#demographicsPage table td {
+    padding: 1em;
+}
+
+.red {
+    color: red;
+}
+
+#completionPage {
     display: none;
 }

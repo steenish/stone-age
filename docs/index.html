@@ -7,48 +7,181 @@
 <body>
     <h1 id="welcomeHeading">Welcome</h1>
 
-    <div id="instructionPage" class="page">
-        <h2>Instructions</h2>
-        <p>INSTRUCTIONS GO HERE INSTRUCTIONS GO HERE INSTRUCTIONS GO HERE INSTRUCTIONS GO HERE INSTRUCTIONS GO HERE INSTRUCTIONS GO HERE INSTRUCTIONS GO HERE INSTRUCTIONS GO HERE INSTRUCTIONS GO HERE INSTRUCTIONS GO HERE INSTRUCTIONS GO HERE INSTRUCTIONS GO HERE INSTRUCTIONS GO HERE INSTRUCTIONS GO HERE INSTRUCTIONS GO HERE INSTRUCTIONS GO HERE INSTRUCTIONS GO HERE INSTRUCTIONS GO HERE INSTRUCTIONS GO HERE INSTRUCTIONS GO HERE INSTRUCTIONS GO HERE INSTRUCTIONS GO HERE INSTRUCTIONS GO HERE INSTRUCTIONS GO HERE INSTRUCTIONS GO HERE INSTRUCTIONS GO HERE INSTRUCTIONS GO HERE INSTRUCTIONS GO HERE INSTRUCTIONS GO HERE INSTRUCTIONS GO HERE </p>
-        <button id="continueButton" disabled onclick="continueButtonPressed()">Continue</button>
+    <div id="screenSizeWarning" class="page">
+        <h2>Screen size too small</h2>
+        <p>The size of your screen is too small to effectively display the tasks. Switch to a larger screen, specifically a computer monitor larger than 1000x600.</p>
+        <p id="screenSize"></p>
     </div>
 
     <div id="consentPage" class="page">
         <h2>Consent</h2>
-        <p>CONSENT GOES HERE CONSENT GOES HERE CONSENT GOES HERE CONSENT GOES HERE CONSENT GOES HERE CONSENT GOES HERE CONSENT GOES HERE CONSENT GOES HERE CONSENT GOES HERE CONSENT GOES HERE CONSENT GOES HERE CONSENT GOES HERE CONSENT GOES HERE CONSENT GOES HERE CONSENT GOES HERE CONSENT GOES HERE CONSENT GOES HERE CONSENT GOES HERE CONSENT GOES HERE CONSENT GOES HERE CONSENT GOES HERE CONSENT GOES HERE CONSENT GOES HERE CONSENT GOES HERE CONSENT GOES HERE CONSENT GOES HERE CONSENT GOES HERE CONSENT GOES HERE CONSENT GOES HERE CONSENT GOES HERE </p>
+        <p>
+            In this task, you will be presented with computer-generated imagery of stone surfaces. We are interested in seeing how you rate the realism and appeal of these images. The task will take approximately 3 minutes.
+        </p>
+        <br>
+        <p>
+            By clicking "Continue" below, you agree to take part in this study. Data from this study will be be kept confidential and only shown in aggregate form. This study is conducted in accordance with the ethical guidelines of KTH Royal Institute of Technology.
+        </p>
+        <br>
+            
+        <button id="continueButton" disabled onclick="continueButtonPressed()">Continue</button>
+    </div>
+
+    <div id="instructionPage" class="page">
+        <h2>Instructions</h2>
+        <p>
+            In this task, you will be shown a computer-generated image of a stone surface with its original appearance. At the same time, you will see two images side by side, both showing the stone surface's appearance after aging for a given period of time.
+        </p>
+        <br>
+        <p>
+            Your task is to answer which of the two aged appearances is more realistic to you, and which one is more appealing to you. You answer by clicking on the button associated with the image. In this context, you are free to decide what realism means to you and answer accordingly.
+        </p>
+        <br>
+        <p>
+            There will be a total of 18 image pairs, each needing to be rated in terms of realism and appeal.
+        </p>
+        <br>
         <button id="startButton" disabled onclick="startButtonPressed()">Start</button>
     </div>
 
     <div id="trialPage" class="page">
         <h2 id="trialNumber">Trial x</h2>
         <p>Based on this reference image</p>
-        <img id="referenceImage" src="img/REF.jpg">
-        <hr>
+        <img id="referenceImage">
         <p>Of the two images below:</p>
-        <p id="realismQuestion">Which one is more realistic to you?</p>
-        <p id="appealQuestion">Which one is more appealing to you?</p>
+        <p id="realismQuestion">Which one is more <span class="highlightedText">realistic</span> to you?</p>
+        <p id="appealQuestion">Which one is more <span class="highlightedText">appealing</span> to you?</p>
         <table>
             <tr>
                 <td>
-                    <img id="leftImage" src="img/NL.png">
+                    <img id="leftImage">
                 </td>
                 <td>
-                    <img id="rightImage" src="img/WL.png">
+                    <img id="rightImage">
                 </td>
             </tr>
             <tr>
                 <td>
-                    <button class="realismButton" onclick="realismSubmit()">Left</button>
-                    <button class="appealButton" onclick="appealSubmit()">Left</button>
+                    <button class="realismButton" onclick="realismSubmit(this.innerHTML)">Left</button>
+                    <button class="appealButton" onclick="appealSubmit(this.innerHTML)">Left</button>
                 </td>
                 <td>
-                    <button class="realismButton" onclick="realismSubmit()">Right</button>
-                    <button class="appealButton" onclick="appealSubmit()">Right</button>
+                    <button class="realismButton" onclick="realismSubmit(this.innerHTML)">Right</button>
+                    <button class="appealButton" onclick="appealSubmit(this.innerHTML)">Right</button>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    <div id="demographicsPage" class="page">
+        <h2>Demographics</h2>
+        <table>
+            <tr>
+                <td>
+                    <p><span class="red">* marks a required question</span></p>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <label for="gender">What is your gender?</label>
+                    <select name="gender">
+                        <option>Male</option>
+                        <option>Female</option>
+                        <option>Non-binary</option>
+                        <option>Other</option>
+                    </select>
+                    <span class="red">*</span>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <label for="age">What is your age?</label>
+                    <input name="age" type="number">
+                    <span class="red">*</span>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <label for="education">What is the highest level of education you have completed?</label>
+                    <select name="education">
+                        <option>Less than high school degree</option>
+                        <option>High school degree or equivalent (e.g., GED)</option>
+                        <option>Some college but no degree</option>
+                        <option>Bachelor degree</option>
+                        <option>Master degree</option>
+                        <option>Professional degree</option>
+                        <option>Doctoral degree</option>
+                    </select>
+                    <span class="red">*</span>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <label for="country">What is your country of origin?</label>
+                    <input name="country" type="text">
+                    <span class="red">*</span>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <label for="experience">What is your experience with computer graphics?</label>
+                    <select name="experience">
+                        <option>I have never interacted with computer graphics</option>
+                        <option>I have seen computer graphics on tv, in films, in video games or in other media</option>
+                        <option>I have limited experience creating computer graphics (e.g. as a hobby or in a university course)</option>
+                        <option>I have professional experience creating computer graphics</option>
+                    </select>
+                    <span class="red">*</span>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <label for="comments">Do you have any comments on the task?</label>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <textarea name="comments" rows="10" cols="100"></textarea>
                 </td>
             </tr>
         </table>
         
+        <button id="completionButton" onclick="verifyAndGatherData()">Continue</button>
     </div>
+
+    <div id="completionPage" class="page">
+        <p id="completionCode"></p>
+    </div>
+
+    <form id="dataForm" method="POST" action="https://script.google.com/macros/s/AKfycbw5tOBH6wjQa08IQZckf_kd03WDWxlQfxqQs9KZK43fJkoxf33cXQp6xRsvVzOoKLBQ/exec">
+        <input name="Gender" type="hidden">
+        <input name="Age" type="hidden">
+        <input name="Education" type="hidden">
+        <input name="Country" type="hidden">
+        <input name="Experience" type="hidden">
+        <input name="Comments" type="hidden">
+        <input name="Duration" type="hidden">
+        <input name="CompletionCode" type="hidden">
+        <input name="Trial 1" type="hidden">
+        <input name="Trial 2" type="hidden">
+        <input name="Trial 3" type="hidden">
+        <input name="Trial 4" type="hidden">
+        <input name="Trial 5" type="hidden">
+        <input name="Trial 5" type="hidden">
+        <input name="Trial 6" type="hidden">
+        <input name="Trial 7" type="hidden">
+        <input name="Trial 8" type="hidden">
+        <input name="Trial 9" type="hidden">
+        <input name="Trial 10" type="hidden">
+        <input name="Trial 11" type="hidden">
+        <input name="Trial 12" type="hidden">
+        <input name="Trial 13" type="hidden">
+        <input name="Trial 14" type="hidden">
+        <input name="Trial 15" type="hidden">
+        <input name="Trial 16" type="hidden">
+        <input name="Trial 17" type="hidden">
+        <input name="Trial 18" type="hidden">
+    </form>
 
     <script src="index.js"></script>
 </body>
