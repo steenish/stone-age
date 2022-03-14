@@ -106,6 +106,7 @@ function verifyAndGatherData() {
         $("input[name=Gender]").val(gender);
         $("input[name=Age]").val(age);
         $("input[name=Education]").val(education);
+        $("input[name=Country]").val(country);
         $("input[name=Experience]").val(experience);
         $("input[name=Comments]").val(comments);
         $("input[name=Duration]").val(duration);
@@ -115,14 +116,12 @@ function verifyAndGatherData() {
             $(`input[name=Trial${i + 1}]`).val(`realism[${realismResults[i]}], appeal[${appealResults[i]}]`);
         }
 
+        alert(`Your Mechanical Turk completion code is: ${completionCode}`);
+
         $("#dataForm").submit();
-        
         $("#demographicsPage").hide();
-        $("#completionPage").show();
-        $("#completionCode").text(`Your Mechanical Turk completion code is: ${completionCode}`);
     } else {
-        console.log(Number.isInteger(age))
-        console.log(country)
+        alert("Incorrect data, correct any errors and try again.");
     }
 }
 
