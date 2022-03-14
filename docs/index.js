@@ -112,7 +112,7 @@ function verifyAndGatherData() {
         $("input[name=CompletionCode]").val(completionCode);
         
         for (var i = 0; i < realismResults.length; ++i) {
-            $(`input[name=Trial ${i + 1}]`).val(`realism[${realismResults[i]}], appeal[${appealResults[i]}]`);
+            $(`input[name=Trial${i + 1}]`).val(`realism[${realismResults[i]}], appeal[${appealResults[i]}]`);
         }
 
         $("#dataForm").submit();
