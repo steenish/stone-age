@@ -1,4 +1,5 @@
 import re
+from collections import Counter
 
 def main():
     file = open("raw.tsv")
@@ -62,10 +63,21 @@ def main():
                 for j, count in enumerate(appealCount):
                     if count[0] == appealName and appealLichenPreferred:
                         appealCount[j] = (appealName, count[1] + 1)
-                
-    print(realismCount)
-    print(appealCount)
+    
+    result = ["name,proportion,lichen,measure\n"]
+    for count in realismCount:
+        proportion = 100 * count[1] / (len(lines) - 1)
+        result.append(f"{count[0]},{int(proportion)},WL,realism\n")
+        result.append(f"{count[0]},{int(100 - proportion)},NL,realism\n")
 
+    for count in appealCount:
+        proportion = int(100 * count[1] / (len(lines) - 1))
+        result.append(f"{count[0]},{proportion},WL,appeal\n")
+        result.append(f"{count[0]},{100 - proportion},NL,appeal\n")
+
+    file = open("results.csv", "w")
+    file.writelines(result)
+    file.close()
 
 if __name__ == "__main__":
     main()
