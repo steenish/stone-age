@@ -30,7 +30,7 @@
     <div id="instructionPage" class="page">
         <h2>Instructions</h2>
         <p>
-            In this task, you will be shown a computer-generated image of a stone surface with its original appearance. At the same time, you will see two images side by side, both showing the stone surface's appearance after aging for a given period of time.
+            In this task, you will be shown two images side by side, both showing an aged stone surface with some objects placed on it.
         </p>
         <br>
         <p>
@@ -46,31 +46,39 @@
 
     <div id="trialPage" class="page">
         <h2 id="trialNumber">Trial x</h2>
-        <p>Based on this reference image</p>
-        <img id="referenceImage">
         <p>Of the two images below:</p>
         <p id="realismQuestion">Which one is more <span class="highlightedText">realistic</span> to you?</p>
         <p id="appealQuestion">Which one is more <span class="highlightedText">appealing</span> to you?</p>
-        <table>
-            <tr>
-                <td>
-                    <img id="leftImage">
-                </td>
-                <td>
-                    <img id="rightImage">
-                </td>
-            </tr>
-            <tr>
-                <td>
-                    <button class="realismButton" onclick="realismSubmit(this.innerHTML)">Left</button>
-                    <button class="appealButton" onclick="appealSubmit(this.innerHTML)">Left</button>
-                </td>
-                <td>
-                    <button class="realismButton" onclick="realismSubmit(this.innerHTML)">Right</button>
-                    <button class="appealButton" onclick="appealSubmit(this.innerHTML)">Right</button>
-                </td>
-            </tr>
-        </table>
+        <div id="leftImageContainer">
+            <table>
+                <tr>
+                    <td>
+                        <img id="leftImage">
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <button class="realismButton" onclick="realismSubmit(this.innerHTML)">Left</button>
+                        <button class="appealButton" onclick="appealSubmit(this.innerHTML)">Left</button>
+                    </td>
+                </tr>
+            </table>
+        </div>
+        <div id="rightImageContainer">
+            <table>
+                <tr>
+                    <td>
+                        <img id="rightImage">
+                    </td>
+                </tr>
+                <tr>
+                    <td>
+                        <button class="realismButton" onclick="realismSubmit(this.innerHTML)">Right</button>
+            <button class="appealButton" onclick="appealSubmit(this.innerHTML)">Right</button>
+                    </td>
+                </tr>
+            </table>
+        </div>
     </div>
 
     <div id="demographicsPage" class="page">

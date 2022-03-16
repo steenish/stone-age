@@ -71,7 +71,17 @@ h1 {
 }
 
 #trialPage img {
-    width: 350px;
+    width: 800px;
+}
+
+#leftImageContainer {
+    left: 1em;
+    position: fixed;
+}
+
+#rightImageContainer {
+    right: 1em;
+    position: fixed;
 }
 
 #appealQuestion {

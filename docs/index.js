@@ -75,7 +75,6 @@ function nextTrial() {
         finishTrials();
     } else {
         $("#trialNumber").text(`Trial ${currentTrialNumber + 1}`)
-        $("#referenceImage").attr("src", `img/${trialOrder[currentTrialNumber]}/REF.png`); // <-- will be png later
         if (Math.random() < 0.5) {
             $("#leftImage").attr("src", `img/${trialOrder[currentTrialNumber]}/NL.png`);
             $("#rightImage").attr("src", `img/${trialOrder[currentTrialNumber]}/WL.png`);
