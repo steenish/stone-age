@@ -44,9 +44,7 @@ namespace StoneAge {
         private Height.RoughnessParameters roughnessParameters;
 
         [SerializeField]
-        private System.Environment.SpecialFolder saveLocation;
-        [SerializeField]
-        private string folderName = "StoneAge";
+        private string savePath = System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyPictures);
         [SerializeField]
         private bool animate = false;
         [SerializeField]
@@ -73,8 +71,7 @@ namespace StoneAge {
         private SerializedProperty propErosionParameters;
         private SerializedProperty propLichenParameters;
         private SerializedProperty propRoughnessParameters;
-        private SerializedProperty propSaveLocation;
-        private SerializedProperty propFolderName;
+        private SerializedProperty propSavePath;
         private SerializedProperty propAnimate;
         private SerializedProperty propIterationsPerFrame;
         private SerializedProperty propSimulateSequence;
@@ -95,8 +92,7 @@ namespace StoneAge {
             propErosionParameters = serializedObject.FindProperty("erosionParameters");
             propLichenParameters = serializedObject.FindProperty("lichenParameters");
             propRoughnessParameters = serializedObject.FindProperty("roughnessParameters");
-            propSaveLocation = serializedObject.FindProperty("saveLocation");
-            propFolderName = serializedObject.FindProperty("folderName");
+            propSavePath = serializedObject.FindProperty("savePath");
             propAnimate = serializedObject.FindProperty("animate");
             propIterationsPerFrame = serializedObject.FindProperty("iterationsPerFrame");
             propSimulateSequence = serializedObject.FindProperty("simulateSequence");
@@ -142,8 +138,12 @@ namespace StoneAge {
 
             EditorGUILayout.Space();
             EditorGUILayout.LabelField("Export settings", EditorStyles.boldLabel);
-            EditorGUILayout.PropertyField(propSaveLocation);
-            EditorGUILayout.PropertyField(propFolderName);
+
+            EditorGUILayout.LabelField($"Save path: {savePath}/");
+            if (GUILayout.Button("Select save path")) {
+                SelectSavePath();
+            }
+            
             additionalTextureFlags = EditorGUILayout.MaskField("Save additional textures", additionalTextureFlags, additionalTextureOptions);
 
             GUILayout.BeginHorizontal();
@@ -263,10 +263,9 @@ namespace StoneAge {
 
             Shader utilityShader = Shader.Find("Hidden/Utility");
 
-            string savePath = $"{System.Environment.GetFolderPath(saveLocation)}/{folderName}/{iterations}/";
-            System.IO.Directory.CreateDirectory(savePath);
-            string alivePath = $"{savePath}Alive/";
-            string deadPath = $"{savePath}Dead/";
+            System.IO.Directory.CreateDirectory($"{savePath}/{iterations}");
+            string alivePath = $"{savePath}/{iterations}/Alive/";
+            string deadPath = $"{savePath}/{iterations}/Dead/";
             if (animate) {
                 System.IO.Directory.CreateDirectory(alivePath);
                 System.IO.Directory.CreateDirectory($"{alivePath}Albedo/");
@@ -411,16 +410,16 @@ namespace StoneAge {
                 }
                 System.DateTime savingStart = System.DateTime.Now;
 
-                Textures.SaveTextureAsPNG(lichenResults[0], $"{savePath}Albedo.png");
-                Textures.SaveTextureAsPNG(Conversion.CreateTexture(size, heightBuffer), $"{savePath}Height.png");
-                Textures.SaveTextureAsPNG(Conversion.CreateTexture(size, newRoughness), $"{savePath}Roughness.png");
+                Textures.SaveTextureAsPNG(lichenResults[0], $"{savePath}/{iterations}/Albedo.png");
+                Textures.SaveTextureAsPNG(Conversion.CreateTexture(size, heightBuffer), $"{savePath}/{iterations}/Height.png");
+                Textures.SaveTextureAsPNG(Conversion.CreateTexture(size, newRoughness), $"{savePath}/{iterations}/Roughness.png");
 
-                Textures.SaveTextureAsPNG(albedoResult, $"{savePath}Dead_Albedo.png");
-                Textures.SaveTextureAsPNG(Conversion.CreateTexture(size, heightBufferDead), $"{savePath}Dead_Height.png");
-                Textures.SaveTextureAsPNG(Conversion.CreateTexture(size, newRoughnessDead), $"{savePath}Dead_Roughness.png");
+                Textures.SaveTextureAsPNG(albedoResult, $"{savePath}/{iterations}/Dead_Albedo.png");
+                Textures.SaveTextureAsPNG(Conversion.CreateTexture(size, heightBufferDead), $"{savePath}/{iterations}/Dead_Height.png");
+                Textures.SaveTextureAsPNG(Conversion.CreateTexture(size, newRoughnessDead), $"{savePath}/{iterations}/Dead_Roughness.png");
 
                 if (additionalTextureFlags != 0) {
-                    string debugPath = $"{savePath}Debug/";
+                    string debugPath = $"{savePath}/{iterations}/Debug/";
                     System.IO.Directory.CreateDirectory(debugPath);
 
                     if ((additionalTextureFlags & (int) DebugTextures.ErosionBuffer) > 0) {
@@ -449,7 +448,7 @@ namespace StoneAge {
             
             CleanUp();
             logger.LogTime("All done", initializationStart);
-            logger.WriteToFile($"{savePath}Log.txt");
+            logger.WriteToFile($"{savePath}/{iterations}/Log.txt");
             return true;
         }
 
@@ -487,6 +486,13 @@ namespace StoneAge {
             string json = EditorPrefs.GetString("tempParams");
             EditorJsonUtility.FromJsonOverwrite(json, this);
             EditorUtility.RequestScriptReload();
+        }
+
+        private void SelectSavePath() {
+            string savePath = EditorUtility.OpenFolderPanel("Select save location path", "", "");
+            if (savePath.Length > 0) {
+                this.savePath = savePath;
+            }
         }
 
         private string SelectProgressBarTitle() {
