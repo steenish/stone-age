@@ -83,9 +83,10 @@ namespace StoneAge {
             RenderTexture previous = RenderTexture.active;
             Material utilityMaterial = new Material(utilityShader);
 
-            RenderTexture colorResult = RenderTexture.GetTemporary(size, size, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
+            RenderTexture colorResult = RenderTexture.GetTemporary(size, size, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB);
             RenderTexture heightResult = RenderTexture.GetTemporary(size, size, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
-            RenderTexture dummy = RenderTexture.GetTemporary(size, size, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
+            RenderTexture colorDummy = RenderTexture.GetTemporary(size, size, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB);
+            RenderTexture heightDummy = RenderTexture.GetTemporary(size, size, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.Linear);
 
             Texture2D noiseTexture = Textures.PerlinNoiseTexture(size, parameters.noiseScale);
             utilityMaterial.SetTexture("_NoiseTex", noiseTexture);
@@ -122,12 +123,12 @@ namespace StoneAge {
                     utilityMaterial.SetColor("_ClusterColor", clusterColor);
                     utilityMaterial.SetInt("_ParticleCount", particlePositions[j].Length);
                     utilityMaterial.SetVectorArray("_Particles", particlePositions[j]);
-                    Graphics.Blit(colorResult, dummy, utilityMaterial, 0); // Color pass.
-                    Graphics.Blit(dummy, colorResult);
+                    Graphics.Blit(colorResult, colorDummy, utilityMaterial, 0); // Color pass.
+                    Graphics.Blit(colorDummy, colorResult);
 
                     utilityMaterial.SetColor("_ClusterColor", Color.white);
-                    Graphics.Blit(heightResult, dummy, utilityMaterial, 0); // Height pass.
-                    Graphics.Blit(dummy, heightResult);
+                    Graphics.Blit(heightResult, heightDummy, utilityMaterial, 0); // Height pass.
+                    Graphics.Blit(heightDummy, heightResult);
                 }
             }
 
@@ -135,8 +136,8 @@ namespace StoneAge {
             finalResults[2] = Textures.GetRTPixels(colorResult);
 
             utilityMaterial.SetTexture("_AlbedoTex", albedoTexture);
-            Graphics.Blit(colorResult, dummy, utilityMaterial, 1); // Blend with albedo.
-            finalResults[0] = Textures.GetRTPixels(dummy);
+            Graphics.Blit(colorResult, colorDummy, utilityMaterial, 1); // Blend with albedo.
+            finalResults[0] = Textures.GetRTPixels(colorDummy);
 
             finalResults[1] = Textures.GetRTPixels(heightResult);
 

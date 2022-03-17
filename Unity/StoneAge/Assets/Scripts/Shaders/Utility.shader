@@ -137,21 +137,7 @@ Shader "Hidden/Utility"
                 float4x4 lichenNeighbors = getNeighborsCross(_MainTex, _MainTex_TexelSize.x, i.uv);
                 float4x4 albedoNeighbors = getNeighborsCross(_AlbedoTex, _AlbedoTex_TexelSize.x, i.uv);
 
-                float4 result = blendColors(lichen, albedo);
-                result += blendColors(lichenNeighbors[0], albedoNeighbors[0]);
-                result += blendColors(lichenNeighbors[1], albedoNeighbors[1]);
-                result += blendColors(lichenNeighbors[2], albedoNeighbors[2]);
-                result += blendColors(lichenNeighbors[3], albedoNeighbors[3]);
-
-                lichenNeighbors = getNeighborsX(_MainTex, _MainTex_TexelSize.x, i.uv);
-                albedoNeighbors = getNeighborsX(_AlbedoTex, _AlbedoTex_TexelSize.x, i.uv);
-
-                result += blendColors(lichenNeighbors[0], albedoNeighbors[0]);
-                result += blendColors(lichenNeighbors[1], albedoNeighbors[1]);
-                result += blendColors(lichenNeighbors[2], albedoNeighbors[2]);
-                result += blendColors(lichenNeighbors[3], albedoNeighbors[3]);
-
-                return result / 9;
+                return blendColors(lichen, albedo);
             }
             ENDCG
         }
