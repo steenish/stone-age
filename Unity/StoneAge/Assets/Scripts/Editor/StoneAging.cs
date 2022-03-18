@@ -71,7 +71,6 @@ namespace StoneAge {
         private SerializedProperty propErosionParameters;
         private SerializedProperty propLichenParameters;
         private SerializedProperty propRoughnessParameters;
-        private SerializedProperty propSavePath;
         private SerializedProperty propAnimate;
         private SerializedProperty propIterationsPerFrame;
         private SerializedProperty propSimulateSequence;
@@ -92,7 +91,6 @@ namespace StoneAge {
             propErosionParameters = serializedObject.FindProperty("erosionParameters");
             propLichenParameters = serializedObject.FindProperty("lichenParameters");
             propRoughnessParameters = serializedObject.FindProperty("roughnessParameters");
-            propSavePath = serializedObject.FindProperty("savePath");
             propAnimate = serializedObject.FindProperty("animate");
             propIterationsPerFrame = serializedObject.FindProperty("iterationsPerFrame");
             propSimulateSequence = serializedObject.FindProperty("simulateSequence");

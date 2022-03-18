@@ -26,7 +26,7 @@ namespace StoneAge {
         public class LichenParameters {
             [Range(0.1f, 10.0f)]
             public float scale = 1.0f;
-            [Range(0, 20)]
+            [Range(0, 1000)]
             public int initialSeeds = 5;
             [Range(10, 200)]
             public int maxPath = 100;
