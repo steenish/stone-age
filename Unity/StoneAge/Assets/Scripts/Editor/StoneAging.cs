@@ -71,6 +71,7 @@ namespace StoneAge {
         private SerializedProperty propErosionParameters;
         private SerializedProperty propLichenParameters;
         private SerializedProperty propRoughnessParameters;
+        private SerializedProperty propSavePath;
         private SerializedProperty propAnimate;
         private SerializedProperty propIterationsPerFrame;
         private SerializedProperty propSimulateSequence;
@@ -91,6 +92,7 @@ namespace StoneAge {
             propErosionParameters = serializedObject.FindProperty("erosionParameters");
             propLichenParameters = serializedObject.FindProperty("lichenParameters");
             propRoughnessParameters = serializedObject.FindProperty("roughnessParameters");
+            propSavePath = serializedObject.FindProperty("savePath");
             propAnimate = serializedObject.FindProperty("animate");
             propIterationsPerFrame = serializedObject.FindProperty("iterationsPerFrame");
             propSimulateSequence = serializedObject.FindProperty("simulateSequence");
@@ -137,7 +139,7 @@ namespace StoneAge {
             EditorGUILayout.Space();
             EditorGUILayout.LabelField("Export settings", EditorStyles.boldLabel);
 
-            EditorGUILayout.LabelField($"Save path: {savePath}/");
+            EditorGUILayout.LabelField($"Save path: {propSavePath.stringValue}/");
             if (GUILayout.Button("Select save path")) {
                 SelectSavePath();
             }
@@ -489,7 +491,7 @@ namespace StoneAge {
         private void SelectSavePath() {
             string savePath = EditorUtility.OpenFolderPanel("Select save location path", "", "");
             if (savePath.Length > 0) {
-                this.savePath = savePath;
+                propSavePath.stringValue = savePath;
             }
         }
 
