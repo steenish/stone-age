@@ -29,7 +29,7 @@ h1 {
     margin: auto;
 }
 
-#consentPage button {
+.centerButton {
     margin: 0;
     position: absolute;
     width: 10%;
@@ -45,15 +45,29 @@ h1 {
     margin: auto;
 }
 
-#instructionPage button {
-    margin: 0;
-    position: absolute;
-    width: 10%;
-    left: 45%;
-}
-
 .highlightedText {
     background-color: red;
+}
+
+#referencePage {
+    display: none;
+}
+
+#referencePage p {
+    width: 80%;
+    margin: auto;
+}
+
+#referencePage a {
+    display: block;
+}
+
+#referencePage table {
+    width: 100%;
+}
+
+#referencePage img {
+    height: 20em;
 }
 
 #trialPage {
@@ -96,13 +110,6 @@ h1 {
     display: none;
 }
 
-#demographicsPage button {
-    margin: 0;
-    position: absolute;
-    width: 10%;
-    left: 45%;
-}
-
 #demographicsPage table {
     margin: auto;
     width: 70%;
@@ -114,4 +121,8 @@ h1 {
 
 .red {
     color: red;
+}
+
+.preloadImage {
+    display: none;
 }

@@ -16,7 +16,7 @@
     <div id="consentPage" class="page">
         <h2>Consent</h2>
         <p>
-            In this task, you will be presented with computer-generated imagery of stone surfaces. We are interested in seeing how you rate the realism and appeal of these images. The task will take approximately 3 minutes.
+            In this task, you will be presented with computer-generated imagery of stone surfaces. We are interested in seeing how you rate the realism of these images. The task will take approximately TODO minutes.
         </p>
         <br>
         <p>
@@ -24,30 +24,55 @@
         </p>
         <br>
             
-        <button id="continueButton" disabled onclick="continueButtonPressed()">Continue</button>
+        <button id="continueButton" class="centerButton" disabled onclick="continueButtonPressed()">Continue</button>
     </div>
 
     <div id="instructionPage" class="page">
         <h2>Instructions</h2>
         <p>
-            In this task, you will be shown two images side by side, both showing an aged stone surface with some objects placed on it.
+            In this task, you will be shown two images side by side, both showing an aged stone surface with some objects placed on it, and with lichen growing on it. In order for you to familiarize yourself with the appearance of real lichen, you will first be shown a collection of reference images, which are not to be rated.
         </p>
         <br>
         <p>
-            Your task is to answer which of the two aged appearances is more realistic to you, and which one is more appealing to you. You answer by clicking on the button associated with the image. In this context, you are free to decide what realism means to you and answer accordingly.
+            Your task is to answer which of the two images is more realistic to you. You answer by clicking on the button associated with the image. In this context, you are free to decide what realism means to you and answer accordingly.
         </p>
         <br>
         <p>
-            There will be a total of 18 image pairs, each needing to be rated in terms of realism and appeal. Make sure to copy the completion code in the dialog window at the very end of the task.
+            There will be a total of 75 image pairs, each needing to be rated in terms of realism. Make sure to copy the completion code in the tab that opens at the very end of the task. You will need to paste this in Mechanical Turk to get the reward.
         </p>
         <br>
-        <button id="startButton" disabled onclick="startButtonPressed()">Start</button>
+        <button id="startButton" class="centerButton" disabled onclick="startButtonPressed()">Start</button>
+    </div>
+
+    <div id="referencePage" class="page">
+        <h2>Reference images</h2>
+        <p>
+            Here is a collection of images showing the appearance of lichens in real life. Familiarize yourself with the appearance of the lichens, then click Start task below to move on to the rating task.
+        </p>
+        <br>
+        <table>
+            <tr>
+                <td>
+                    <img src="img/ref1.jpg">
+                    <a href="https://pxhere.com/en/photo/1369678" target="_blank">source</a>
+                </td>
+                <td>
+                    <img src="img/ref2.jpg">
+                    <a href="https://www.maxpixel.net/Nature-Moss-Rocks-Rock-Texture-Stone-Lichen-1461368" target="_blank">source</a>
+                </td>
+                <td>
+                    <img src="img/ref3.jpg">
+                    <a href="https://www.flickr.com/photos/gemstone/2624337546/in/photostream/" target="_blank">source</a>
+                </td>
+            </tr>
+        </table>
+        <br>
+        <button id="trialStartButton" class="centerButton" disabled onclick="trialStartButtonPressed()">Start task</button>
     </div>
 
     <div id="trialPage" class="page">
         <h2 id="trialNumber">Trial x</h2>
-        <p>Of the two images below:</p>
-        <p id="realismQuestion">Which one is more <span class="highlightedText">realistic</span> to you?</p>
+        <p>Of the two images below, which one is more <span class="highlightedText">realistic</span> to you?</p>
         <div id="leftImageContainer">
             <table>
                 <tr>
@@ -162,12 +187,40 @@
             </tr>
         </table>
         
-        <button id="completionButton" onclick="verifyAndGatherData()">Finish and get completion code</button>
+        <button id="completionButton" class="centerButton" onclick="verifyAndGatherData()">Finish and get completion code</button>
     </div>
 
     <form id="dataForm" method="POST" action="https://script.google.com/macros/s/AKfycbxi_SUd528lbdeYNGakFQUWcUFnKHhPGxorifPluuY2EbpKMYoaSZlzP05JnfLcJlDF_Q/exec">
         <input name="Data" type="hidden">
     </form>
+
+    <img class="preloadImage" src="img/S1C1C1.png">
+    <img class="preloadImage" src="img/S1C1C2.png">
+    <img class="preloadImage" src="img/S1C1C3.png">
+    <img class="preloadImage" src="img/S1C2C1.png">
+    <img class="preloadImage" src="img/S1C2C2.png">
+    <img class="preloadImage" src="img/S1C2C3.png">
+    <img class="preloadImage" src="img/S1C3C1.png">
+    <img class="preloadImage" src="img/S1C3C2.png">
+    <img class="preloadImage" src="img/S1C3C3.png">
+    <img class="preloadImage" src="img/S2C1C1.png">
+    <img class="preloadImage" src="img/S2C1C2.png">
+    <img class="preloadImage" src="img/S2C1C3.png">
+    <img class="preloadImage" src="img/S2C2C1.png">
+    <img class="preloadImage" src="img/S2C2C2.png">
+    <img class="preloadImage" src="img/S2C2C3.png">
+    <img class="preloadImage" src="img/S2C3C1.png">
+    <img class="preloadImage" src="img/S2C3C2.png">
+    <img class="preloadImage" src="img/S2C3C3.png">
+    <img class="preloadImage" src="img/S3C1C1.png">
+    <img class="preloadImage" src="img/S3C1C2.png">
+    <img class="preloadImage" src="img/S3C1C3.png">
+    <img class="preloadImage" src="img/S3C2C1.png">
+    <img class="preloadImage" src="img/S3C2C2.png">
+    <img class="preloadImage" src="img/S3C2C3.png">
+    <img class="preloadImage" src="img/S3C3C1.png">
+    <img class="preloadImage" src="img/S3C3C2.png">
+    <img class="preloadImage" src="img/S3C3C3.png">
 
     <script src="index.js"></script>
 </body>

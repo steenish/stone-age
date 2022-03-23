@@ -83,8 +83,8 @@ const trialOrder = [...trials.keys()];
 shuffleArray(trialOrder);
 const numTrials = trials.length;
 let currentTrialIndex = -1;
-const pageDelay = 500;//0;
-const trialDelay = 100;//0;
+const pageDelay = 5000;
+const trialDelay = 1000;
 let startTime = new Date();
 let results = []
 
@@ -105,6 +105,12 @@ function continueButtonPressed() {
 
 function startButtonPressed() {
     $("#instructionPage").hide();
+    $("#referencePage").show();
+    setTimeout(() => $("#trialStartButton").prop("disabled", false), pageDelay);
+}
+
+function trialStartButtonPressed() {
+    $("#referencePage").hide();
     startTrials();
 }
 
@@ -114,13 +120,13 @@ function startTrials() {
     nextTrial();
 }
 
-function realismSubmit(button) { //TODO
+function realismSubmit(button) {
     setButtonEnableTimer("realismButton", trialDelay);
     results.push(getTrialResult(button));
     nextTrial();
 }
 
-function getTrialResult(button) { //TODO
+function getTrialResult(button) {
     let imageString = "";
     if (button === "Left") {
         imageString = $("#leftImage").attr("src");
@@ -134,7 +140,7 @@ function getTrialResult(button) { //TODO
     }
 }
 
-function nextTrial() { //TODO
+function nextTrial() {
     currentTrialIndex += 1;
     if (currentTrialIndex >= numTrials) {
         finishTrials();
@@ -174,8 +180,8 @@ function verifyAndGatherData() {
         }
 
         var tab = window.open('about:blank', '_blank');
-        tab.document.write(`Your Mechanical Turk completion code is: ${data.completionCode}`); // where 'html' is a variable containing your HTML
-        tab.document.close(); // to finish loading the page
+        tab.document.write(`<h1 style="font-family: sans-serif;">Your Mechanical Turk completion code is: ${data.completionCode}</h1>`);
+        tab.document.close();
 
         $("input[name=Data]").val(JSON.stringify(data));
         $("#dataForm").submit();
