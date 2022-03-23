@@ -1,11 +1,86 @@
-const trialOrder = ["Rock1Lichen1", "Rock1Lichen2", "Rock1Lichen3", "Rock2Lichen1", "Rock2Lichen2", "Rock2Lichen3", "Rock3Lichen1", "Rock3Lichen2", "Rock3Lichen3", "Tiles1Lichen1", "Tiles1Lichen2", "Tiles1Lichen3", "Tiles2Lichen1", "Tiles2Lichen2", "Tiles2Lichen3", "Tiles3Lichen1", "Tiles3Lichen2", "Tiles3Lichen3"];
+const trials = [
+    ["S1C1C1", "S1C1C2"],
+    ["S1C1C1", "S1C1C3"],
+    ["S1C1C1", "S1C2C1"],
+    ["S1C1C1", "S1C3C1"],
+    ["S1C1C1", "S2C1C1"],
+    ["S1C1C1", "S3C1C1"],
+    ["S1C1C2", "S1C1C3"],
+    ["S1C1C2", "S1C2C2"],
+    ["S1C1C2", "S1C3C2"],
+    ["S1C1C2", "S2C1C2"],
+    ["S1C1C2", "S3C1C2"],
+    ["S1C1C3", "S1C2C3"],
+    ["S1C1C3", "S1C3C3"],
+    ["S1C1C3", "S2C1C3"],
+    ["S1C1C3", "S3C1C3"],
+    ["S1C2C1", "S1C2C2"],
+    ["S1C2C1", "S1C2C3"],
+    ["S1C2C1", "S1C3C1"],
+    ["S1C2C1", "S2C2C1"],
+    ["S1C2C1", "S3C2C1"],
+    ["S1C2C2", "S1C2C3"],
+    ["S1C2C2", "S1C3C2"],
+    ["S1C2C2", "S2C2C2"],
+    ["S1C2C2", "S3C2C2"],
+    ["S1C2C3", "S1C3C3"],
+    ["S1C2C3", "S2C2C3"],
+    ["S1C2C3", "S3C2C3"],
+    ["S1C3C1", "S1C3C2"],
+    ["S1C3C1", "S1C3C3"],
+    ["S1C3C1", "S2C3C1"],
+    ["S1C3C1", "S3C3C1"],
+    ["S1C3C2", "S1C3C3"],
+    ["S1C3C2", "S2C3C2"],
+    ["S1C3C2", "S3C3C2"],
+    ["S1C3C3", "S2C3C3"],
+    ["S2C1C1", "S2C1C2"],
+    ["S2C1C1", "S2C1C3"],
+    ["S2C1C1", "S2C2C1"],
+    ["S2C1C1", "S2C3C1"],
+    ["S2C1C1", "S3C1C1"],
+    ["S2C1C2", "S2C1C3"],
+    ["S2C1C2", "S2C2C2"],
+    ["S2C1C2", "S2C3C2"],
+    ["S2C1C2", "S3C1C2"],
+    ["S2C1C3", "S2C2C3"],
+    ["S2C1C3", "S2C3C3"],
+    ["S2C1C3", "S3C1C3"],
+    ["S2C2C1", "S2C2C2"],
+    ["S2C2C1", "S2C2C3"],
+    ["S2C2C1", "S2C3C1"],
+    ["S2C2C1", "S3C2C1"],
+    ["S2C2C2", "S2C2C3"],
+    ["S2C2C2", "S2C3C2"],
+    ["S2C2C2", "S3C2C2"],
+    ["S2C2C3", "S2C3C3"],
+    ["S2C2C3", "S3C2C3"],
+    ["S2C3C1", "S2C3C2"],
+    ["S2C3C1", "S2C3C3"],
+    ["S2C3C1", "S3C3C1"],
+    ["S2C3C2", "S2C3C3"],
+    ["S2C3C2", "S3C3C2"],
+    ["S3C1C1", "S3C1C2"],
+    ["S3C1C1", "S3C1C3"],
+    ["S3C1C1", "S3C2C1"],
+    ["S3C1C1", "S3C3C1"],
+    ["S3C1C2", "S3C1C3"],
+    ["S3C1C2", "S3C2C2"],
+    ["S3C1C2", "S3C3C2"],
+    ["S3C1C3", "S3C2C3"],
+    ["S3C2C1", "S3C2C2"],
+    ["S3C2C1", "S3C2C3"],
+    ["S3C2C1", "S3C3C1"],
+    ["S3C2C2", "S3C2C3"],
+    ["S3C2C2", "S3C3C2"],
+    ["S3C3C1", "S3C3C2"]
+];
+const trialOrder = trials.keys();
 shuffleArray(trialOrder);
-const numTrials = trialOrder.length;
+const numTrials = trials.length;
 let currentTrialNumber = -1;
-const pageDelay = 5000;
-const trialDelay = 1000;
-let realismResults = [];
-let appealResults = [];
+const pageDelay = 500;//0;
+const trialDelay = 100;//0;
 let startTime = new Date();
 
 setTimeout(() => $("#continueButton").prop("disabled", false), pageDelay);
@@ -35,7 +110,7 @@ function startTrials() {
     nextTrial();
 }
 
-function realismSubmit(button) {
+function realismSubmit(button) { //TODO
     $("#realismQuestion").hide();
     $("#appealQuestion").show();
     
@@ -46,7 +121,7 @@ function realismSubmit(button) {
     realismResults.push(getTrialResult(button));
 }
 
-function appealSubmit(button) {
+function appealSubmit(button) { //TODO
     $("#realismQuestion").show();
     $("#appealQuestion").hide();
     
@@ -59,7 +134,7 @@ function appealSubmit(button) {
     nextTrial();
 }
 
-function getTrialResult(button) {
+function getTrialResult(button) { //TODO
     let imageString = "";
     if (button === "Left") {
         imageString = $("#leftImage").attr("src");
@@ -69,7 +144,7 @@ function getTrialResult(button) {
     return `${imageString.substring(4, imageString.length - 4)}(${button})`;
 }
 
-function nextTrial() {
+function nextTrial() { //TODO
     currentTrialNumber += 1;
     if (currentTrialNumber >= numTrials) {
         finishTrials();
@@ -91,31 +166,26 @@ function finishTrials() {
 }
 
 function verifyAndGatherData() {
-    let gender = $("select[name=gender]").find(":selected").text();
-    let age = parseInt($("input[name=age]").val(), 10);
-    let education = $("select[name=education]").find(":selected").text();
-    let country = $("input[name=country]").val();
-    let experience = $("select[name=experience]").find(":selected").text();
-    let comments = $("textarea[name=comments]").val();
+    let data = {
+        gender: $("select[name=gender]").find(":selected").text(),
+        age: parseInt($("input[name=age]").val(), 10),
+        education: $("select[name=education]").find(":selected").text(),
+        country: $("input[name=country]").val(),
+        experience: $("select[name=experience]").find(":selected").text(),
+        vision: $("select[name=vision]").find(":selected").text(),
+        comments: $("textarea[name=comments]").val()
+    }
     
     if (Number.isInteger(age) && country) {
-        let completionCode = generateCompletionCode(10);
-        let duration = 0.001 * (new Date() - startTime);
+        data.completionCode = generateCompletionCode(10);
+        data.duration = 0.001 * (new Date() - startTime);
         
-        $("input[name=Gender]").val(gender);
-        $("input[name=Age]").val(age);
-        $("input[name=Education]").val(education);
-        $("input[name=Country]").val(country);
-        $("input[name=Experience]").val(experience);
-        $("input[name=Comments]").val(comments);
-        $("input[name=Duration]").val(duration);
-        $("input[name=CompletionCode]").val(completionCode);
-        
-        for (var i = 0; i < realismResults.length; ++i) {
-            $(`input[name=Trial${i + 1}]`).val(`realism[${realismResults[i]}], appeal[${appealResults[i]}]`);
-        }
+        // TODO
+        // for (var i = 0; i < realismResults.length; ++i) {
+        //     $(`input[name=Trial${i + 1}]`).val(`realism[${realismResults[i]}], appeal[${appealResults[i]}]`);
+        // }
 
-        alert(`Your Mechanical Turk completion code is: ${completionCode}`);
+        alert(`Your Mechanical Turk completion code is: ${data.completionCode}`);
 
         $("#dataForm").submit();
         $("#demographicsPage").hide();
