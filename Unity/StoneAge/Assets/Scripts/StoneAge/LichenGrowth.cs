@@ -95,7 +95,7 @@ namespace StoneAge {
             // Sort to avoid capping position array size.
             clusters.Sort((c1, c2) => c2.particles.Count.CompareTo(c1.particles.Count));
 
-            int arrayCap = 1023;
+            int arrayCap = 256;
             for (int i = 0; i < clusters.Count; ++i) {
                 List<Vector2> particles = clusters[i].particles;
                 int numArrays = 1 + particles.Count / arrayCap;
