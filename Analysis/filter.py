@@ -1,83 +1,56 @@
-import re
-from collections import Counter
+import json
+from json import tool
+from typing import Dict
 
 def main():
     file = open("raw.tsv")
     lines = file.readlines()
     file.close()
 
-    realismCount = [
-        ("Rock1Lichen1", 0),
-        ("Rock1Lichen2", 0),
-        ("Rock1Lichen3", 0),
-        ("Rock2Lichen1", 0),
-        ("Rock2Lichen2", 0),
-        ("Rock2Lichen3", 0),
-        ("Rock3Lichen1", 0),
-        ("Rock3Lichen2", 0),
-        ("Rock3Lichen3", 0),
-        ("Tiles1Lichen1", 0),
-        ("Tiles1Lichen2", 0),
-        ("Tiles1Lichen3", 0),
-        ("Tiles2Lichen1", 0),
-        ("Tiles2Lichen2", 0),
-        ("Tiles2Lichen3", 0),
-        ("Tiles3Lichen1", 0),
-        ("Tiles3Lichen2", 0),
-        ("Tiles3Lichen3", 0)
-    ]
-    appealCount = [
-        ("Rock1Lichen1", 0),
-        ("Rock1Lichen2", 0),
-        ("Rock1Lichen3", 0),
-        ("Rock2Lichen1", 0),
-        ("Rock2Lichen2", 0),
-        ("Rock2Lichen3", 0),
-        ("Rock3Lichen1", 0),
-        ("Rock3Lichen2", 0),
-        ("Rock3Lichen3", 0),
-        ("Tiles1Lichen1", 0),
-        ("Tiles1Lichen2", 0),
-        ("Tiles1Lichen3", 0),
-        ("Tiles2Lichen1", 0),
-        ("Tiles2Lichen2", 0),
-        ("Tiles2Lichen3", 0),
-        ("Tiles3Lichen1", 0),
-        ("Tiles3Lichen2", 0),
-        ("Tiles3Lichen3", 0)
-    ]
+    file = open("batchResults.csv")
+    batchResults = file.readlines()
+    file.close()
+
+    workers = {}
+
+    for i, line in enumerate(batchResults):
+        if i > 0:
+            values = line.split(",")
+            workers[values[-1].strip("\n").strip('"')] = values[-13].strip('"')
+
+    demographics = ["Timestamp\tGender\tAge\tEducation\tCountry\tExperience\tVision\n"]
+    lazinessThreshold = 0.5
+    tooLazy = []
+
     for i, line in enumerate(lines):
         if i > 0:
-            rawValues = line.split("\t")[10:]
-            for value in rawValues:
-                match = re.search(r"realism\[(.+)/([NW]L)\(.+\)\], appeal\[(.+)/([NW]L)\(.+\)\]", value)
-                
-                realismName = match.group(1)
-                realismLichenPreferred = match.group(2) == "WL"
-                for j, count in enumerate(realismCount):
-                    if count[0] == realismName and realismLichenPreferred:
-                        realismCount[j] = (realismName, count[1] + 1)
+            rawValues = line.split("\t")
+            timestamp = rawValues[0]
+            data = json.loads(rawValues[1])
 
-                appealName = match.group(3)
-                appealLichenPreferred = match.group(4) == "WL"
-                for j, count in enumerate(appealCount):
-                    if count[0] == appealName and appealLichenPreferred:
-                        appealCount[j] = (appealName, count[1] + 1)
-    
-    result = ["name,proportion,lichen,measure\n"]
-    for count in realismCount:
-        proportion = 100 * count[1] / (len(lines) - 1)
-        result.append(f"{count[0]},{int(proportion)},WL,realism\n")
-        result.append(f"{count[0]},{int(100 - proportion)},NL,realism\n")
+            trialData = data["trialResults"]
+            counter = 0
+            for trial in trialData:
+                if trial["selectedButton"] == "Left":
+                    counter -= 1
+                else:
+                    counter += 1
+            laziness = counter / len(trialData)
 
-    for count in appealCount:
-        proportion = int(100 * count[1] / (len(lines) - 1))
-        result.append(f"{count[0]},{proportion},WL,appeal\n")
-        result.append(f"{count[0]},{100 - proportion},NL,appeal\n")
-
-    file = open("results.csv", "w")
-    file.writelines(result)
+            if abs(laziness) < lazinessThreshold:
+                demographics.append(f'{timestamp}\t{data["gender"]}\t{data["age"]}\t{data["education"]}\t{data["country"]}\t{data["experience"]}\t{data["vision"]}\n')
+            else:
+                tooLazy.append(f'{workers[data["completionCode"]]}, {laziness}')
+            
+    file = open("demographics.tsv", "w")
+    file.writelines(demographics)
     file.close()
+
+    if len(tooLazy) > 0:
+        print(f"{len(tooLazy)} worker(s) was/were too lazy:")
+        print(tooLazy)
+    else:
+        print("No workers were too lazy.")
 
 if __name__ == "__main__":
     main()
