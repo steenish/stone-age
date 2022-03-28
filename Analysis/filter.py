@@ -150,10 +150,12 @@ def main():
                             diffIndex = j
                             break
                     scoreIndex = int(1.5 * (diffIndex - 1))
+                    minusIndex = scoreIndex + int(otherImage[diffIndex]) - 1
                     scoreIndex += int(selectedImage[diffIndex]) - 1
 
                     # Increment the score.
                     participantScore[scoreIndex] += 1
+                    participantScore[minusIndex] -= 1
                 
                 participantScores.append(participantScore)
             else:
