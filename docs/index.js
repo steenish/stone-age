@@ -170,14 +170,9 @@ function verifyAndGatherData() {
             experience: $("select[name=experience]").find(":selected").text(),
             vision: $("select[name=vision]").find(":selected").text(),
             comments: $("textarea[name=comments]").val(),
-            completionCode: generateCompletionCode(10),
             duration: 0.001 * (new Date() - startTime),
             trialResults: results
         }
-
-        var tab = window.open('about:blank', '_blank');
-        tab.document.write(`<h1 style="font-family: sans-serif;">Your Mechanical Turk completion code is: ${data.completionCode}</h1>`);
-        tab.document.close();
 
         $("input[name=Data]").val(JSON.stringify(data));
         $("#dataForm").submit();
@@ -185,16 +180,6 @@ function verifyAndGatherData() {
     } else {
         alert("Incorrect data, correct any errors and try again.");
     }
-}
-
-function generateCompletionCode(length) {
-    var result = "";
-    var characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-    var charactersLength = characters.length;
-    for (var i = 0; i < length; i++) {
-        result += characters.charAt(Math.floor(Math.random() * charactersLength));
-    }
-    return result;
 }
 
 function setButtonEnableTimer(className, delay) {
