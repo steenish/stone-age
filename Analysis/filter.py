@@ -1,6 +1,4 @@
 import json
-from json import tool
-from typing import Dict
 
 def main():
     # Read the raw results straight from the experiments.
@@ -13,19 +11,11 @@ def main():
     batchResults = file.readlines()
     file.close()
 
-    # Create dictionary of completionCode -> workerId.
-    workers = {}
-    for i, line in enumerate(batchResults):
-        if i > 0:
-            values = line.split(",")
-            workers[values[-1].strip("\n").strip('"')] = values[-13].strip('"')
-
     # Initialize parameters.
     lazinessThreshold = 0.5
-    numParticipants = len(lines)
 
     # Initialize demographics results.
-    demographics = ["Timestamp\tGender\tAge\tEducation\tCountry\tExperience\tVision\n"]
+    demographics = ["Timestamp\tGender\tAge\tEducation\tCountry\tExperience\tVision\tDuration\n"]
     
     # Initialize list of lazy participants.
     tooLazy = []
@@ -109,7 +99,10 @@ def main():
         ("S3C3C1", "S3C3C2")
     ]
     # Initialize scoring results.
-    # Order of elements: S1, S2, S3, C1, C2, C3, c1, c2, c3 (where c is number of clusters)
+    # Order of elements:
+    # - Very first index is just the index of the participant
+    # - First sub-index is parameter group (S, C, N)
+    # - (Second, Third) sub-indices are e.g. with S1 vs S2, S1's score is in (0, 1) and S2's score is in (1, 0)
     participantScores = []
 
     # For each participant.
@@ -132,10 +125,25 @@ def main():
 
             # If worker is not lazy, store demographics and calculate scores.
             if abs(laziness) < lazinessThreshold:
-                demographics.append(f'{timestamp}\t{data["gender"]}\t{data["age"]}\t{data["education"]}\t{data["country"]}\t{data["experience"]}\t{data["vision"]}\n')
+                demographics.append(f'{timestamp}\t{data["gender"]}\t{data["age"]}\t{data["education"]}\t{data["country"]}\t{data["experience"]}\t{data["vision"]}\t{data["duration"]}\n')
 
-                # This participant's scores, S1, S2, S3, C1, C2, C3, c1, c2, c3.
-                participantScore = [0, 0, 0, 0, 0, 0, 0, 0, 0]
+                participantScore = [
+                        [
+                            [0, 0, 0],
+                            [0, 0, 0],
+                            [0, 0, 0]
+                        ],
+                                    [
+                                        [0, 0, 0],
+                                        [0, 0, 0],
+                                        [0, 0, 0]
+                                    ],
+                                                [
+                                                    [0, 0, 0],
+                                                    [0, 0, 0],
+                                                    [0, 0, 0]
+                                                ]
+                    ]
                 for trial in trialData:
                     trialIndex = trial["trialNum"]
                     selectedImage = trial["selectedImage"]
@@ -149,21 +157,42 @@ def main():
                         if c != otherImage[j]:
                             diffIndex = j
                             break
-                    scoreIndex = int(1.5 * (diffIndex - 1))
-                    minusIndex = scoreIndex + int(otherImage[diffIndex]) - 1
-                    scoreIndex += int(selectedImage[diffIndex]) - 1
+                    parameterGroupIndex = int(0.5 * (diffIndex - 1))
+                    selectedIndex = int(selectedImage[diffIndex]) - 1
+                    otherIndex = int(otherImage[diffIndex]) - 1
 
-                    # Increment the score.
-                    participantScore[scoreIndex] += 1
-                    participantScore[minusIndex] -= 1
+                    # Modify the scores.
+                    participantScore[parameterGroupIndex][selectedIndex][otherIndex] += 1
+                    participantScore[parameterGroupIndex][otherIndex][selectedIndex] -= 1
                 
                 participantScores.append(participantScore)
             else:
-                tooLazy.append(f'{workers[data["completionCode"]]}, {laziness}')
+                tooLazy.append(f'{data["completionCode"]}, {laziness}')
     
-    trialResults = ["S1\tS2\tS3\tC1\tC2\tC3\tc1\tc2\tc3\n"]
+    trialResults = ["S1S2_1\tS1S2_2\tS1S3_1\tS1S3_3\tS2S3_2\tS2S3_3\tC1C2_1\tC1C2_2\tC1C3_1\tC1C3_3\tC2C3_2\tC2C3_3\tN1N2_1\tN1N2_2\tN1N3_1\tN1N3_3\tN2N3_2\tN2N3_3\n"]
+    trialResultsDict = { "S1S2_1": [], "S1S2_2": [], "S1S3_1": [], "S1S3_3": [], "S2S3_2": [], "S2S3_3": [], "C1C2_1": [], "C1C2_2": [], "C1C3_1": [], "C1C3_3": [], "C2C3_2": [], "C2C3_3": [], "N1N2_1": [], "N1N2_2": [], "N1N3_1": [], "N1N3_3": [], "N2N3_2": [], "N2N3_3": [] }
     for score in participantScores:
-        trialResults.append(f"{score[0]}\t{score[1]}\t{score[2]}\t{score[3]}\t{score[4]}\t{score[5]}\t{score[6]}\t{score[7]}\t{score[8]}\n")
+        trialResults.append(f"{score[0][0][1]}\t{score[0][1][0]}\t{score[0][0][2]}\t{score[0][2][0]}\t{score[0][1][2]}\t{score[0][2][1]}\t{score[1][0][1]}\t{score[1][1][0]}\t{score[1][0][2]}\t{score[1][2][0]}\t{score[1][1][2]}\t{score[1][2][1]}\t{score[2][0][1]}\t{score[2][1][0]}\t{score[2][0][2]}\t{score[2][2][0]}\t{score[2][1][2]}\t{score[2][2][1]}\n")
+        trialResultsDict["S1S2_1"].append(score[0][0][1])
+        trialResultsDict["S1S2_2"].append(score[0][1][0])
+        trialResultsDict["S1S3_1"].append(score[0][0][2])
+        trialResultsDict["S1S3_3"].append(score[0][2][0])
+        trialResultsDict["S2S3_2"].append(score[0][1][2])
+        trialResultsDict["S2S3_3"].append(score[0][2][1])
+
+        trialResultsDict["C1C2_1"].append(score[1][0][1])
+        trialResultsDict["C1C2_2"].append(score[1][1][0])
+        trialResultsDict["C1C3_1"].append(score[1][0][2])
+        trialResultsDict["C1C3_3"].append(score[1][2][0])
+        trialResultsDict["C2C3_2"].append(score[1][1][2])
+        trialResultsDict["C2C3_3"].append(score[1][2][1])
+
+        trialResultsDict["N1N2_1"].append(score[2][0][1])
+        trialResultsDict["N1N2_2"].append(score[2][1][0])
+        trialResultsDict["N1N3_1"].append(score[2][0][2])
+        trialResultsDict["N1N3_3"].append(score[2][2][0])
+        trialResultsDict["N2N3_2"].append(score[2][1][2])
+        trialResultsDict["N2N3_3"].append(score[2][2][1])
 
     file = open("demographics.tsv", "w")
     file.writelines(demographics)
@@ -172,6 +201,9 @@ def main():
     file = open("trialResults.tsv", "w")
     file.writelines(trialResults)
     file.close()
+
+    with open("trialResults.json", 'w') as fp:
+        json.dump(trialResultsDict, fp)
 
     if len(tooLazy) > 0:
         print(f"{len(tooLazy)} worker(s) was/were too lazy:")

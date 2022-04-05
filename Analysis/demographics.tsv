@@ -1,11 +1,11 @@
-Timestamp	Gender	Age	Education	Country	Experience	Vision
-2022-03-25 11:44:44	Male	29	Bachelor degree	USA	I have never interacted with computer graphics	normal vision
-2022-03-25 11:46:28	Female	35	Master degree	India	I have professional experience creating computer graphics	normal vision
-2022-03-25 11:47:28	Female	30	Bachelor degree	India	I have never interacted with computer graphics	normal vision
-2022-03-25 11:51:56	Male	29	Bachelor degree	USA	I have limited experience creating computer graphics (e.g. as a hobby or in a university course)	normal vision
-2022-03-25 11:53:05	Female	30	Master degree	India	I have never interacted with computer graphics	corrected-to-normal vision (i.e. glasses, contact lenses)
-2022-03-25 12:13:45	Male	35	Bachelor degree	India	I have professional experience creating computer graphics	normal vision
-2022-03-25 12:27:42	Male	34	Bachelor degree	india	I have seen computer graphics on tv, in films, in video games or in other media	corrected-to-normal vision (i.e. glasses, contact lenses)
-2022-03-25 12:30:46	Female	35	Bachelor degree	India	I have seen computer graphics on tv, in films, in video games or in other media	corrected-to-normal vision (i.e. glasses, contact lenses)
-2022-03-25 12:51:50	Female	30	Bachelor degree	India	I have professional experience creating computer graphics	normal vision
-2022-03-25 13:25:11	Male	30	Master degree	India	I have seen computer graphics on tv, in films, in video games or in other media	normal vision
+Timestamp	Gender	Age	Education	Country	Experience	Vision	Duration
+2022-03-25 11:44:44	Male	29	Bachelor degree	USA	I have never interacted with computer graphics	normal vision	776.7570000000001
+2022-03-25 11:46:28	Female	35	Master degree	India	I have professional experience creating computer graphics	normal vision	611.662
+2022-03-25 11:47:28	Female	30	Bachelor degree	India	I have never interacted with computer graphics	normal vision	1109.577
+2022-03-25 11:51:56	Male	29	Bachelor degree	USA	I have limited experience creating computer graphics (e.g. as a hobby or in a university course)	normal vision	823.331
+2022-03-25 11:53:05	Female	30	Master degree	India	I have never interacted with computer graphics	corrected-to-normal vision (i.e. glasses, contact lenses)	274.63800000000003
+2022-03-25 12:13:45	Male	35	Bachelor degree	India	I have professional experience creating computer graphics	normal vision	2108.811
+2022-03-25 12:27:42	Male	34	Bachelor degree	india	I have seen computer graphics on tv, in films, in video games or in other media	corrected-to-normal vision (i.e. glasses, contact lenses)	827.268
+2022-03-25 12:30:46	Female	35	Bachelor degree	India	I have seen computer graphics on tv, in films, in video games or in other media	corrected-to-normal vision (i.e. glasses, contact lenses)	272.964
+2022-03-25 12:51:50	Female	30	Bachelor degree	India	I have professional experience creating computer graphics	normal vision	1501.906
+2022-03-25 13:25:11	Male	30	Master degree	India	I have seen computer graphics on tv, in films, in video games or in other media	normal vision	1085.665

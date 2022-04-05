@@ -6,7 +6,7 @@ trialJson = file.readlines()[0]
 file.close()
 data = json.loads(trialJson)
 
-# Data per box plot.
+# --- Your data, e.g. results per algorithm:
 dataS1S2_1 = data["S1S2_1"]
 dataS1S2_2 = data["S1S2_2"]
 dataS1S3_1 = data["S1S3_1"]
@@ -26,29 +26,31 @@ dataN1N3_3 = data["N1N3_3"]
 dataN2N3_2 = data["N2N3_2"]
 dataN2N3_3 = data["N2N3_3"]
 
-# Combining data:
-data_group1 = [dataS1S2_1, dataS1S2_2]
-data_group2 = [dataS1S3_1, dataS1S3_3]
-data_group3 = [dataS2S3_2, dataS2S3_3]
-data_group4 = [dataC1C2_1, dataC1C2_2]
-data_group5 = [dataC1C3_1, dataC1C3_3]
-data_group6 = [dataC2C3_2, dataC2C3_3]
-data_group7 = [dataN1N2_1, dataN1N2_2]
-data_group8 = [dataN1N3_1, dataN1N3_3]
-data_group9 = [dataN2N3_2, dataN2N3_3]
+data1 = dataS1S2_1
+data2 = dataS1S2_2
+data3 = dataS1S3_1
+data4 = dataS1S3_3
+data6 = dataS2S3_2
+data7 = dataS2S3_3
 
-data_groups = [data_group1, data_group2, data_group3, data_group4, data_group5, data_group6, data_group7, data_group8, data_group9]
 
-# Labels for data:
-labels_list = ["S1, S2", "S1, S3", "S2, S3", "C1, C2", "C1, C3", "C2, C3", "N1, N2", "N1, N3", "N2, N3"]
+# --- Combining your data:
+data_group1 = [data1, data2, data6]
+data_group2 = [data3, data4, data7]
+data_group3 = [data1, data1, data1]
+data_group4 = [data2, data2, data2]
+data_group5 = [data2, data2, data2]
+
+data_groups = [data_group1, data_group2, data_group3] #, data_group4] #, data_group5]
+
+# --- Labels for your data:
+labels_list = ['a','b', 'c']
 width       = 0.3
-xlocations  = [ x * ((1 + len(data_groups)) * width) for x in range(len(data_group1)) ]
+xlocations  = [ x*((1+ len(data_groups))*width) for x in range(len(data_group1)) ]
 
 symbol      = 'r+'
-# ymin        = min ( [ val  for dg in data_groups  for data in dg for val in data ] )
-# ymax        = max ( [ val  for dg in data_groups  for data in dg for val in data ] )
-ymin        = -10
-ymax        = 10
+ymin        = min ( [ val  for dg in data_groups  for data in dg for val in data ] )
+ymax        = max ( [ val  for dg in data_groups  for data in dg for val in data ])
 
 ax = pl.gca()
 ax.set_ylim(ymin,ymax)
@@ -62,6 +64,7 @@ pl.title('title')
 
 space = len(data_groups)/2
 offset = len(data_groups)/2
+
 
 ax.set_xticks( xlocations )
 ax.set_xticklabels( labels_list, rotation=0 )
