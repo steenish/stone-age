@@ -25,7 +25,7 @@ def main():
     numParticipants = len(lines)
 
     # Initialize demographics results.
-    demographics = ["Timestamp\tGender\tAge\tEducation\tCountry\tExperience\tVision\n"]
+    demographics = ["Timestamp\tGender\tAge\tEducation\tCountry\tExperience\tVision\tDuration\n"]
     
     # Initialize list of lazy participants.
     tooLazy = []
@@ -132,7 +132,7 @@ def main():
 
             # If worker is not lazy, store demographics and calculate scores.
             if abs(laziness) < lazinessThreshold:
-                demographics.append(f'{timestamp}\t{data["gender"]}\t{data["age"]}\t{data["education"]}\t{data["country"]}\t{data["experience"]}\t{data["vision"]}\n')
+                demographics.append(f'{timestamp}\t{data["gender"]}\t{data["age"]}\t{data["education"]}\t{data["country"]}\t{data["experience"]}\t{data["vision"]}\t{data["duration"]}\n')
 
                 # This participant's scores, S1, S2, S3, C1, C2, C3, c1, c2, c3.
                 participantScore = [0, 0, 0, 0, 0, 0, 0, 0, 0]
@@ -162,8 +162,18 @@ def main():
                 tooLazy.append(f'{workers[data["completionCode"]]}, {laziness}')
     
     trialResults = ["S1\tS2\tS3\tC1\tC2\tC3\tc1\tc2\tc3\n"]
+    trialResultsDict = { "S1": [], "S2": [], "S3": [], "C1": [], "C2": [], "C3": [], "N1": [], "N2": [], "N3": [] }
     for score in participantScores:
         trialResults.append(f"{score[0]}\t{score[1]}\t{score[2]}\t{score[3]}\t{score[4]}\t{score[5]}\t{score[6]}\t{score[7]}\t{score[8]}\n")
+        trialResultsDict["S1"].append(score[0])
+        trialResultsDict["S2"].append(score[1])
+        trialResultsDict["S3"].append(score[2])
+        trialResultsDict["C1"].append(score[3])
+        trialResultsDict["C2"].append(score[4])
+        trialResultsDict["C3"].append(score[5])
+        trialResultsDict["N1"].append(score[6])
+        trialResultsDict["N2"].append(score[7])
+        trialResultsDict["N3"].append(score[8])
 
     file = open("demographics.tsv", "w")
     file.writelines(demographics)
@@ -172,6 +182,9 @@ def main():
     file = open("trialResults.tsv", "w")
     file.writelines(trialResults)
     file.close()
+
+    with open("trialResults.json", "w") as fp:
+        json.dump(trialResultsDict, fp)
 
     if len(tooLazy) > 0:
         print(f"{len(tooLazy)} worker(s) was/were too lazy:")
