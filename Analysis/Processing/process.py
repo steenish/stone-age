@@ -1,31 +1,30 @@
 import json
 from json import tool
 from typing import Dict
+import matplotlib.pyplot as plt
 
 def main():
+    ######################## FILTERING START ########################
+
+    # Get filename of data file.
+    filename = input("Enter raw data filename (without .tsv): ")
+
     # Read the raw results straight from the experiments.
-    file = open("raw.tsv")
-    lines = file.readlines()
-    file.close()
-
-    # Read the results exported from MTurk.
-    file = open("batchResults.csv")
-    batchResults = file.readlines()
-    file.close()
-
-    # Create dictionary of completionCode -> workerId.
-    workers = {}
-    for i, line in enumerate(batchResults):
-        if i > 0:
-            values = line.split(",")
-            workers[values[-1].strip("\n").strip('"')] = values[-13].strip('"')
+    lines = []
+    try:
+        file = open(f"Raw/{filename}.tsv")
+        lines = file.readlines()
+        file.close()
+    except:
+        print("Error reading file.")
+        return
 
     # Initialize parameters.
     lazinessThreshold = 0.5
     numParticipants = len(lines)
 
-    # Initialize demographics results.
-    demographics = ["Timestamp\tGender\tAge\tEducation\tCountry\tExperience\tVision\tDuration\n"]
+    # Initialize demographics and comments results.
+    demographics = ["Timestamp\tGender\tAge\tEducation\tCountry\tExperience\tVision\tDuration\tComments\n"]
     
     # Initialize list of lazy participants.
     tooLazy = []
@@ -132,7 +131,8 @@ def main():
 
             # If worker is not lazy, store demographics and calculate scores.
             if abs(laziness) < lazinessThreshold:
-                demographics.append(f'{timestamp}\t{data["gender"]}\t{data["age"]}\t{data["education"]}\t{data["country"]}\t{data["experience"]}\t{data["vision"]}\t{data["duration"]}\n')
+                comments = data["comments"].replace("\n", " ")
+                demographics.append(f'{timestamp}\t{data["gender"]}\t{data["age"]}\t{data["education"]}\t{data["country"]}\t{data["experience"]}\t{data["vision"]}\t{data["duration"]}\t{comments}\n')
 
                 # This participant's scores, S1, S2, S3, C1, C2, C3, c1, c2, c3.
                 participantScore = [0, 0, 0, 0, 0, 0, 0, 0, 0]
@@ -159,7 +159,7 @@ def main():
                 
                 participantScores.append(participantScore)
             else:
-                tooLazy.append(f'{workers[data["completionCode"]]}, {laziness}')
+                tooLazy.append(f'participant {i}, {laziness}')
     
     trialResults = ["S1\tS2\tS3\tC1\tC2\tC3\tc1\tc2\tc3\n"]
     trialResultsDict = { "S1": [], "S2": [], "S3": [], "C1": [], "C2": [], "C3": [], "N1": [], "N2": [], "N3": [] }
@@ -175,15 +175,15 @@ def main():
         trialResultsDict["N2"].append(score[7])
         trialResultsDict["N3"].append(score[8])
 
-    file = open("demographics.tsv", "w")
+    file = open(f"Processed/{filename}_demographics.tsv", "w")
     file.writelines(demographics)
     file.close()
 
-    file = open("trialResults.tsv", "w")
+    file = open(f"Processed/{filename}_trialResults.tsv", "w")
     file.writelines(trialResults)
     file.close()
 
-    with open("trialResults.json", "w") as fp:
+    with open(f"Processed/{filename}_trialResults.json", "w") as fp:
         json.dump(trialResultsDict, fp)
 
     if len(tooLazy) > 0:
@@ -191,6 +191,84 @@ def main():
         print(tooLazy)
     else:
         print("No workers were too lazy.")
+
+
+
+    ######################## FILTERING END ########################
+
+    ######################## PLOTTING START ########################
+
+
+
+    # Data per boxplot.
+    dataS1 = trialResultsDict["S1"]
+    dataS2 = trialResultsDict["S2"]
+    dataS3 = trialResultsDict["S3"]
+    dataC1 = trialResultsDict["C1"]
+    dataC2 = trialResultsDict["C2"]
+    dataC3 = trialResultsDict["C3"]
+    dataN1 = trialResultsDict["N1"]
+    dataN2 = trialResultsDict["N2"]
+    dataN3 = trialResultsDict["N3"]
+
+    data_group1 = [dataS1, dataS2, dataS3]
+    data_group2 = [dataC1, dataC2, dataC3]
+    data_group3 = [dataN1, dataN2, dataN3]
+
+    labels_list = ["S1", "S2", "S3", "C1", "C2", "C3", "N1", "N2", "N3"]
+    xlocations  = range(len(labels_list))
+    width       = 0.2
+    symbol      = 'r+'
+    ymin        = -20
+    ymax        = 20
+
+    ax = plt.gca()
+    ax.set_ylim(ymin,ymax)
+    ax.grid(True, linestyle='dotted')
+    ax.set_axisbelow(True)
+    plt.xlabel("Parameter group")
+    plt.ylabel("Score")
+    plt.title("Score by parameter group")
+
+    # Offset the positions per group.
+    positions_group1 = [xlocations[0] - (width + 0.01), xlocations[0], xlocations[0] + (width + 0.01)]
+    positions_group2 = [xlocations[1] - (width + 0.01), xlocations[1], xlocations[1] + (width + 0.01)]
+    positions_group3 = [xlocations[2] - (width + 0.01), xlocations[2], xlocations[2] + (width + 0.01)]
+
+    plt.boxplot(data_group1, 
+                sym=symbol,
+                labels=labels_list[:3],
+                positions=positions_group1, 
+                widths=width, 
+    #           notch=False,  
+    #           vert=True, 
+    #           whis=1.5,
+    #           bootstrap=None, 
+    #           usermedians=None, 
+    #           conf_intervals=None,
+    #           patch_artist=False,
+                )
+
+    plt.boxplot(data_group2, 
+                labels=labels_list[3:6],
+                sym=symbol,
+                positions=positions_group2, 
+                widths=width
+                )
+
+    plt.boxplot(data_group3, 
+                labels=labels_list[6:],
+                sym=symbol,
+                positions=positions_group3, 
+                widths=width
+                )
+
+    plt.savefig(f"Plots/{filename}_boxplot.png")  
+    plt.savefig(f"Plots/{filename}_boxplot.pdf")
+    #plt.show()                   # uncomment to show the plot.
+
+    ######################## PLOTTING END ########################
+    
 
 if __name__ == "__main__":
     main()
