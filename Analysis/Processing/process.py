@@ -163,17 +163,18 @@ def main():
     
     trialResults = ["S1\tS2\tS3\tC1\tC2\tC3\tc1\tc2\tc3\n"]
     trialResultsDict = { "S1": [], "S2": [], "S3": [], "C1": [], "C2": [], "C3": [], "N1": [], "N2": [], "N3": [] }
+    normalizingFactor = 1 / 18
     for score in participantScores:
-        trialResults.append(f"{score[0]}\t{score[1]}\t{score[2]}\t{score[3]}\t{score[4]}\t{score[5]}\t{score[6]}\t{score[7]}\t{score[8]}\n")
-        trialResultsDict["S1"].append(score[0])
-        trialResultsDict["S2"].append(score[1])
-        trialResultsDict["S3"].append(score[2])
-        trialResultsDict["C1"].append(score[3])
-        trialResultsDict["C2"].append(score[4])
-        trialResultsDict["C3"].append(score[5])
-        trialResultsDict["N1"].append(score[6])
-        trialResultsDict["N2"].append(score[7])
-        trialResultsDict["N3"].append(score[8])
+        trialResults.append(f"{score[0] * normalizingFactor}\t{score[1] * normalizingFactor}\t{score[2] * normalizingFactor}\t{score[3] * normalizingFactor}\t{score[4] * normalizingFactor}\t{score[5] * normalizingFactor}\t{score[6] * normalizingFactor}\t{score[7] * normalizingFactor}\t{score[8] * normalizingFactor}\n")
+        trialResultsDict["S1"].append(score[0] * normalizingFactor)
+        trialResultsDict["S2"].append(score[1] * normalizingFactor)
+        trialResultsDict["S3"].append(score[2] * normalizingFactor)
+        trialResultsDict["C1"].append(score[3] * normalizingFactor)
+        trialResultsDict["C2"].append(score[4] * normalizingFactor)
+        trialResultsDict["C3"].append(score[5] * normalizingFactor)
+        trialResultsDict["N1"].append(score[6] * normalizingFactor)
+        trialResultsDict["N2"].append(score[7] * normalizingFactor)
+        trialResultsDict["N3"].append(score[8] * normalizingFactor)
 
     file = open(f"Processed/{filename}_demographics.tsv", "w")
     file.writelines(demographics)
@@ -219,8 +220,8 @@ def main():
     xlocations  = range(len(labels_list))
     width       = 0.2
     symbol      = 'r+'
-    ymin        = -20
-    ymax        = 20
+    ymin        = -1
+    ymax        = 1
 
     ax = plt.gca()
     ax.set_ylim(ymin,ymax)
