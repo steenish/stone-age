@@ -223,13 +223,15 @@ def main():
     ymin        = -1
     ymax        = 1
 
+    plt.axhline(y = 0, color = "black", linewidth=0.4)
+
     ax = plt.gca()
     ax.set_ylim(ymin,ymax)
     ax.grid(True, linestyle='dotted')
     ax.set_axisbelow(True)
-    plt.xlabel("Parameter group")
-    plt.ylabel("Score")
-    plt.title("Score by parameter group")
+    plt.xlabel("Parameter setting")
+    plt.ylabel("Realism score")
+    plt.title("Realism score by parameter setting")
 
     # Offset the positions per group.
     positions_group1 = [xlocations[0] - (width + 0.01), xlocations[0], xlocations[0] + (width + 0.01)]
@@ -264,7 +266,7 @@ def main():
                 widths=width
                 )
 
-    plt.savefig(f"Plots/{filename}_boxplot.png")  
+    plt.savefig(f"Plots/{filename}_boxplot.png")
     plt.savefig(f"Plots/{filename}_boxplot.pdf")
     #plt.show()                   # uncomment to show the plot.
 
