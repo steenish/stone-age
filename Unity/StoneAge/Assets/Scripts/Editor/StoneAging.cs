@@ -183,14 +183,17 @@ namespace StoneAge {
             string sequencePath = EditorUtility.OpenFilePanel("Select setting sequence file", Application.dataPath, "txt");
             if (sequencePath.Length > 0) {
                 string[] settingNames = System.IO.File.ReadAllLines(sequencePath);
+                int repetitions = int.Parse(settingNames[0]);
                 bool keepGoing = true;
                 try {
-                    for (int i = 0; i < settingNames.Length && keepGoing; ++i) {
-                        string path = $"{Application.dataPath}/ParameterSettings/{settingNames[i]}.json";
-                        DeserializeAndImport(path);
-                        currentSettingName = settingNames[i];
-                        simulateSequence = true;
-                        keepGoing = PerformAging();
+                    for (int rep = 0; rep < repetitions && keepGoing; ++rep) {
+                        for (int i = 1; i < settingNames.Length && keepGoing; ++i) {
+                            string path = $"{Application.dataPath}/ParameterSettings/{settingNames[i]}.json";
+                            DeserializeAndImport(path);
+                            currentSettingName = settingNames[i];
+                            simulateSequence = true;
+                            keepGoing = PerformAging();
+                        }
                     }
                 } catch (System.Exception e) {
                     CleanUp();
@@ -263,9 +266,16 @@ namespace StoneAge {
 
             Shader utilityShader = Shader.Find("Hidden/Utility");
 
-            System.IO.Directory.CreateDirectory($"{savePath}/{iterations}");
-            string alivePath = $"{savePath}/{iterations}/Alive/";
-            string deadPath = $"{savePath}/{iterations}/Dead/";
+            string saveDirectory = $"{savePath}/{iterations}";
+            int repeated = 0;
+            while (System.IO.Directory.Exists($"{saveDirectory}/{repeated}")) {
+                repeated++;
+            }
+            saveDirectory = $"{saveDirectory}/{repeated}";
+            System.IO.Directory.CreateDirectory(saveDirectory);
+
+            string alivePath = $"{saveDirectory}/Alive/";
+            string deadPath = $"{saveDirectory}/Dead/";
             if (animate) {
                 System.IO.Directory.CreateDirectory(alivePath);
                 System.IO.Directory.CreateDirectory($"{alivePath}Albedo/");
@@ -410,16 +420,16 @@ namespace StoneAge {
                 }
                 System.DateTime savingStart = System.DateTime.Now;
 
-                Textures.SaveTextureAsPNG(lichenResults[0], $"{savePath}/{iterations}/Albedo.png");
-                Textures.SaveTextureAsPNG(Conversion.CreateTexture(size, heightBuffer), $"{savePath}/{iterations}/Height.png");
-                Textures.SaveTextureAsPNG(Conversion.CreateTexture(size, newRoughness), $"{savePath}/{iterations}/Roughness.png");
+                Textures.SaveTextureAsPNG(lichenResults[0], $"{saveDirectory}/Albedo.png");
+                Textures.SaveTextureAsPNG(Conversion.CreateTexture(size, heightBuffer), $"{saveDirectory}/Height.png");
+                Textures.SaveTextureAsPNG(Conversion.CreateTexture(size, newRoughness), $"{saveDirectory}/Roughness.png");
 
-                Textures.SaveTextureAsPNG(albedoResult, $"{savePath}/{iterations}/Dead_Albedo.png");
-                Textures.SaveTextureAsPNG(Conversion.CreateTexture(size, heightBufferDead), $"{savePath}/{iterations}/Dead_Height.png");
-                Textures.SaveTextureAsPNG(Conversion.CreateTexture(size, newRoughnessDead), $"{savePath}/{iterations}/Dead_Roughness.png");
+                Textures.SaveTextureAsPNG(albedoResult, $"{saveDirectory}/Dead_Albedo.png");
+                Textures.SaveTextureAsPNG(Conversion.CreateTexture(size, heightBufferDead), $"{saveDirectory}/Dead_Height.png");
+                Textures.SaveTextureAsPNG(Conversion.CreateTexture(size, newRoughnessDead), $"{saveDirectory}/Dead_Roughness.png");
 
                 if (additionalTextureFlags != 0) {
-                    string debugPath = $"{savePath}/{iterations}/Debug/";
+                    string debugPath = $"{saveDirectory}/Debug/";
                     System.IO.Directory.CreateDirectory(debugPath);
 
                     if ((additionalTextureFlags & (int) DebugTextures.ErosionBuffer) > 0) {
@@ -448,7 +458,7 @@ namespace StoneAge {
             
             CleanUp();
             logger.LogTime("All done", initializationStart);
-            logger.WriteToFile($"{savePath}/{iterations}/Log.txt");
+            logger.WriteToFile($"{saveDirectory}/Log.txt");
             return true;
         }
 
