@@ -1,0 +1,4 @@
+1
+anim_S1C2N2
+anim_S2C2N2
+anim_S3C2N2
